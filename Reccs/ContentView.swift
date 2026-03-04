@@ -8,14 +8,41 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var store = MovieStore()
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 60) {
+                    MovieShelfView(
+                        shelfTitle: "American Cinema",
+                        filteredMovies: store.films.filter { $0.id.hasPrefix("AM") }
+                    )
+                    MovieShelfView(
+                        shelfTitle: "Eurasian Cinema",
+                        filteredMovies: store.films.filter { $0.id.hasPrefix("AS") || $0.id.contains("EU") }
+                    )
+                    MovieShelfView(
+                        shelfTitle: "African Cinema",
+                        filteredMovies: store.films.filter { $0.id.hasPrefix("AF") }
+                    )
+                    MovieShelfView(
+                        shelfTitle: "Oceanian Cinema",
+                        filteredMovies: store.films.filter { $0.id.hasPrefix("OC") }
+                    )
+                }
+                .padding(.top, 60)
+            }
+            .navigationDestination(for: MovieEntry.self) { movie in
+                MovieDetailView(movie: movie)
+            }
         }
-        .padding()
+//        VStack {
+//            Image(systemName: "globe")
+//                .imageScale(.large)
+//                .foregroundStyle(.tint)
+//            Text("RECCS")
+//        }
+//        .padding()
     }
 }
 

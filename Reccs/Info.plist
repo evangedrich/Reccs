@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>kanopy</string>
+		<string>nflx</string>
+		<string>com.apple.TVAppStore</string>
+		<string>primevideo</string>
+		<string>youtube</string>
+		<string>hbomax</string>
+		<string>tubitv</string>
+		<string>vimeo</string>
+		<string>mubi</string>
+		<string>hulu</string>
+		<string>vhx-criterion-channel</string>
+		<string>vudu</string>
+		<string>roku</string>
+	</array>
+</dict>
+</plist>

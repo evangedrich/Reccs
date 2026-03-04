@@ -9,9 +9,12 @@ import SwiftUI
 
 @main
 struct ReccsApp: App {
+    @State private var movieStore = MovieStore()
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(movieStore)
         }
     }
 }
