@@ -12,12 +12,22 @@ struct InfoTextPreview: View {
     @Environment(\.isFocused) var isFocused // Native check for focus
 
     var body: some View {
-        Text(text)
-            .font(.body)
-            .lineLimit(3)
-            .truncationMode(.tail)
-            .foregroundColor(isFocused ? .black : .white.opacity(0.9))
-            .scaleEffect(isFocused ? 1.02 : 1.0)
-            .animation(.snappy, value: isFocused)
+        if let attributedText = try? AttributedString(markdown: text) {
+            Text(attributedText)
+                .font(.body)
+                .lineLimit(3)
+                .truncationMode(.tail)
+                .foregroundColor(isFocused ? .black : .white.opacity(0.9))
+                .scaleEffect(isFocused ? 1.02 : 1.0)
+                .animation(.snappy, value: isFocused)
+        } else {
+            Text(text)
+                .font(.body)
+                .lineLimit(3)
+                .truncationMode(.tail)
+                .foregroundColor(isFocused ? .black : .white.opacity(0.9))
+                .scaleEffect(isFocused ? 1.02 : 1.0)
+                .animation(.snappy, value: isFocused)
+        }
     }
 }

@@ -53,50 +53,37 @@ extension Color {
 }
 
 extension MovieEntry {
-    var watchURL: URL? {
-        guard let webURL = watch.first else { return nil }
-        
-        var finalURLString = webURL
-        
-        if webURL.contains("kanopy.com") {
-            finalURLString = webURL.replacingOccurrences(of: "https://", with: "kanopy://")
-        } else if webURL.contains("netflix.com") {
-            finalURLString = webURL.replacingOccurrences(of: "https://", with: "nflx://")
-        } else if webURL.contains("tv.apple.com") {
-            finalURLString = webURL.replacingOccurrences(of: "https://", with: "videos://")
-        } else if webURL.contains("amazon.com") || webURL.contains("primevideo.com") {
-            finalURLString = webURL.replacingOccurrences(of: "https://", with: "primevideo://")
+    func getWatchURL(for webURL: String) -> URL? {
+        let finalURLString = webURL
+        if webURL.contains("amazon.com") || webURL.contains("primevideo.com") {
+            if let id = webURL.components(separatedBy: "/detail/").last?.components(separatedBy: "/").first {
+                return URL(string: "aiv://aiv/play?asin=\(id)")
+            }
         } else if webURL.contains("youtu.be") || webURL.contains("youtube.com") {
-            finalURLString = webURL.replacingOccurrences(of: "https://", with: "youtube://")
-        } else if webURL.contains("max.com") || webURL.contains("hbomax.com") {
-            finalURLString = webURL.replacingOccurrences(of: "https://", with: "max://")
-        } else if webURL.contains("tubitv.com") {
-            finalURLString = webURL.replacingOccurrences(of: "https://", with: "tubitv://")
-        } else if webURL.contains("vimeo.com") {
-            finalURLString = webURL.replacingOccurrences(of: "https://", with: "vimeo://")
-        } else if webURL.contains("mubi.com") {
-            finalURLString = webURL.replacingOccurrences(of: "https://", with: "mubi://")
-        } else if webURL.contains("hulu.com") {
-            finalURLString = webURL.replacingOccurrences(of: "https://", with: "hulu://")
-        } else if webURL.contains("criterionchannel.com") {
-            finalURLString = webURL.replacingOccurrences(of: "https://", with: "vhx-criterion-channel://")
-        } else if webURL.contains("vudu.com") || webURL.contains("fandangoathome.com") {
-            finalURLString = webURL.replacingOccurrences(of: "https://", with: "vudu://")
-        } else if webURL.contains("therokuchannel.roku.com") {
-            finalURLString = webURL.replacingOccurrences(of: "https://", with: "roku://")
+            let id = webURL.contains("youtu.be/") ?
+                webURL.components(separatedBy: "youtu.be/").last?.components(separatedBy: "?").first :
+                URLComponents(string: webURL)?.queryItems?.first(where: { $0.name == "v" })?.value
+            if let id = id { return URL(string: "youtube://watch/\(id)") }
+        } else if webURL.contains("max.com") {
+            let id = webURL.components(separatedBy: "/").last?.components(separatedBy: "?").first
+            if let id = id { return URL(string: "https://play.max.com/movie/\(id)") }
+        } else if webURL.contains("kanopy.com") {
+            let id = webURL.components(separatedBy: "/").last?.components(separatedBy: "?").first
+            if let id = id { return URL(string: "https://www.kanopy.com/product/\(id)") }
         }
-        
-        // Note: Klassiki, Internet Archive, Hoopla, and Fawesome TV
-        // typically rely on standard Universal Links (https://) for tvOS.
-        
         return URL(string: finalURLString)
+    }
+
+    var watchURL: URL? {
+        guard let first = watch.first else { return nil }
+        return getWatchURL(for: first)
     }
 }
 
 extension MovieEntry {
     // Returns the brand name based on the URL string
-    var watchServiceName: String {
-        guard let url = watch.first?.lowercased() else { return "Movie" }
+    func getServiceName(for urlString: String) -> String {
+        let url = urlString.lowercased()
         
         if url.contains("kanopy") { return "Kanopy" }
         else if url.contains("netflix") { return "Netflix" }
@@ -113,10 +100,42 @@ extension MovieEntry {
         else if url.contains("mubi") { return "MUBI" }
         else if url.contains("hulu") { return "Hulu" }
         else if url.contains("criterion") { return "Criterion" }
-        else if url.contains("fandango") || url.contains("vudu") { return "Fandango" }
+        else if url.contains("fandango") { return "Fandango" }
+        else if url.contains("vudu") { return "Vudu" }
         else if url.contains("roku") { return "Roku" }
         
-        return "Movie" // Default fallback
+        return "Movie"
+    }
+
+    // Convenience property for the primary button
+    var watchServiceName: String {
+        guard let first = watch.first else { return "Movie" }
+        return getServiceName(for: first)
+    }
+}
+
+extension MovieEntry {
+    func getServiceColors(for urlString: String) -> (bg: Color, text: Color) {
+        let url = urlString.lowercased()
+        
+        if url.contains("netflix") { return (Color(hex: "101010"), Color(hex: "D12F26")) }
+        if url.contains("amazon") || url.contains("primevideo") { return (Color(hex: "3577F6"), .white) }
+        if url.contains("youtu") { return (Color(hex: "EA3323"), .white) }
+        if url.contains("apple.com") { return (.white, .black) }
+        if url.contains("max.com") || url.contains("hbomax") { return (Color(hex: "0047E0"), .white) }
+        if url.contains("hulu") { return (Color(hex: "1CE783"), .black) }
+        if url.contains("disneyplus") { return (Color(hex: "113CCF"), .white) }
+        if url.contains("criterion") { return (Color(hex: "282828"), .white) }
+        if url.contains("mubi") { return (Color(hex: "04159F"), .white) }
+        if url.contains("kanopy") { return (Color(hex: "111111"), .white) }
+        if url.contains("vudu") { return (Color(hex: "3178ff"), .white) }
+        if url.contains("fandango") { return (Color(hex: "EE7B30"), Color(hex: "4676BB")) }
+        if url.contains("tubi") { return (Color(hex: "5136A4"), Color(hex: "FCF75F")) }
+        if url.contains("hoopla") { return (Color(hex: "51ABE4"), .white) }
+        if url.contains("vimeo") { return (Color(hex: "62AFD7"), .white) }
+        if url.contains("fawesome") { return (Color(hex: "EA3323"), .white) }
+        
+        return (Color.black.opacity(0.8), .white)
     }
 }
 

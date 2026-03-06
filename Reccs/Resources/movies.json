@@ -70,6 +70,37 @@
   {
     "id": "AFSOCFF",
     "title": {
+      "original": "Nǃai"
+    },
+    "year": "1980",
+    "runtime": 59,
+    "genre": [
+      "Docudrama",
+      "Coming-of-Age"
+    ],
+    "tags": [
+      ""
+    ],
+    "group": {
+      "people": "Juǀʼhoansi",
+      "language": "Juǀʼhoan",
+      "country": "Namibia"
+    },
+    "info": "The Juǀʼhoansi *Boyhood*, this film depicts 27 years in the life of Nǃai and the changes experienced by her and the members of her ǃKung community across that time. Though ideally the film would have been directed and produced by a Juǀʼhoansi Richard Linklater to be a truly representative feature, the intimate portrayals and captioned translations presented in this work are personal enough to sincerely relate something of the spirit of the Kalahari region.",
+    "watch": [
+      "https://www.kanopy.com/en/product/110328"
+    ],
+    "trailer": "https://youtu.be/1nLWevhitPM",
+    "color": "#3d2d2b",
+    "location": {
+      "x": 55,
+      "y": 69.2,
+      "name": "Nyae Nyae Region"
+    }
+  },
+  {
+    "id": "AFSOCFF1",
+    "title": {
       "original": "Inxeba",
       "translation": "The Wound"
     },
@@ -189,7 +220,7 @@
       "language": "Inuktitut",
       "location": "Nunavut, CA"
     },
-    "info": "Igloolik is a community of 1,200 people located on a small island in the north Baffin region of the Canadian Arctic with archeological evidence of 4,000 years of continuous habitation. Throughout these millennia, with no written language, untold numbers of nomadic Inuit renewed their culture and traditional knowledge for every generation entirely through storytelling.\n*Atanarjuat* is part of this continuous stream of oral history carried forward into the new millennium through a marriage of Inuit storytelling skills and new technology.\nDir/Prod **ZACHARIAS KUNUK** is the renowned Inuk filmmaker responsible for an extensive Inuktitut-language media presence, with directing, writing, and producing credits on a great variety of North American indigenous cinema, including over 30 films, funding for the IsumaTV multimedia platform, and much more.",
+    "info": "Igloolik is a community of 1,200 people located on a small island in the north Baffin region of the Canadian Arctic with archeological evidence of 4,000 years of continuous habitation. Throughout these millennia, with no written language, untold numbers of nomadic Inuit renewed their culture and traditional knowledge for every generation entirely through storytelling. *Atanarjuat* is part of this continuous stream of oral history carried forward into the new millennium through a marriage of Inuit storytelling skills and new technology.\nDir/Prod **ZACHARIAS KUNUK** is the renowned Inuk filmmaker responsible for an extensive Inuktitut-language media presence, with directing, writing, and producing credits on a great variety of North American indigenous cinema, including over 30 films, funding for the IsumaTV multimedia platform, and much more.",
     "watch": [
       "https://tv.apple.com/us/movie/umc.cmc.1co9m5b61l1hkihyksjodghe2"
     ],
@@ -259,7 +290,7 @@
     "watch": [
       ""
     ],
-    "trailer": "https://youtu.be/qvK0_Lg95tg",
+    "trailer": "https://youtu.be/Rp_UIamM2kU",
     "color": "#a87d4f",
     "location": {
       "x": 20.2,
@@ -474,9 +505,9 @@
     "year": "2021",
     "runtime": 77,
     "genre": [
-      "Documentary",
+      "Docufiction",
       "Hybrid",
-      "Docufiction"
+      "Poetic"
     ],
     "tags": [
       ""
@@ -491,7 +522,7 @@
       "https://youtu.be/MsUAluISvgE"
     ],
     "trailer": "https://youtu.be/2tK-5dydqp8",
-    "color": "#5c693a",
+    "color": "#2A3829",
     "location": {
       "x": 32,
       "y": 53,
@@ -518,7 +549,7 @@
       "language": "Ayoreo",
       "country": "Paraguay"
     },
-    "info": "Eami's homeland is invaded by settlers. She embodies Asojá, the bird-god-woman, falling into a trance. She walks slowly and stunned through her beloved forest, preparing to leave it forever.\nDir/Scr/Prod **PAZ ENCINA** continues her work of remembrance with an intimate and sensorial approach to the recent history of Paraguay. Eami is a fragmented work, an immersive and hypnotic experience in which the mysticism of nature and its soundscape is interwoven with the perspective of a child.",
+    "info": "Eami’s homeland is invaded by settlers. She embodies Asojá, the bird-god-woman, falling into a trance. She walks slowly and stunned through her beloved forest, preparing to leave it forever.\nDir/Scr/Prod **PAZ ENCINA** continues her work of remembrance with an intimate and sensorial approach to the recent history of Paraguay. Eami is a fragmented work, an immersive and hypnotic experience in which the mysticism of nature and its soundscape is interwoven with the perspective of a child.",
     "watch": [
       ""
     ],
@@ -1108,7 +1139,6 @@
     "id": "OCMDCFF",
     "title": {
       "original": "Rehefa mihaona ny ranomasina sy ny kintana",
-      "transliteration": "Quand les étoiles rencontrent la mer",
       "translation": "When the Stars Meet the Sea"
     },
     "year": "1996",

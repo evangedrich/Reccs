@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		4F9A032A2F57E548008284EC /* YouTubeKit in Frameworks */ = {isa = PBXBuildFile; productRef = 4F9A03292F57E548008284EC /* YouTubeKit */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		4F5420E92F3FA472001FDF14 /* Reccs.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Reccs.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -36,6 +40,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4F9A032A2F57E548008284EC /* YouTubeKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,6 +83,7 @@
 			);
 			name = Reccs;
 			packageProductDependencies = (
+				4F9A03292F57E548008284EC /* YouTubeKit */,
 			);
 			productName = Reccs;
 			productReference = 4F5420E92F3FA472001FDF14 /* Reccs.app */;
@@ -107,6 +113,9 @@
 			);
 			mainGroup = 4F5420E02F3FA472001FDF14;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				4F9A03282F57E548008284EC /* XCRemoteSwiftPackageReference "YouTubeKit" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 4F5420EA2F3FA472001FDF14 /* Products */;
 			projectDirPath = "";
@@ -347,6 +356,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		4F9A03282F57E548008284EC /* XCRemoteSwiftPackageReference "YouTubeKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/alexeichhorn/YouTubeKit";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.4.5;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		4F9A03292F57E548008284EC /* YouTubeKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4F9A03282F57E548008284EC /* XCRemoteSwiftPackageReference "YouTubeKit" */;
+			productName = YouTubeKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 4F5420E12F3FA472001FDF14 /* Project object */;
 }

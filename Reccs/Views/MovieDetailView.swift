@@ -11,6 +11,9 @@ struct MovieDetailView: View {
     let movie: MovieEntry
     @State private var showInstallAlert = false
     @State private var showFullInfo = false
+    @State private var isPlayingTrailer = false
+    @State private var showProviderList = false
+    @State private var failedServiceName = ""
     @Namespace private var detailNamespace
     @FocusState private var focusedElement: FocusElement?
     
@@ -21,6 +24,7 @@ struct MovieDetailView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     Text(movie.title.original)
                         .font(.system(size: 80, weight: .heavy))
+                        .environment(\._lineHeightMultiple, 0.8)
                     
                     if movie.title.transliteration != nil || movie.title.translation != nil {
                         (
@@ -81,7 +85,10 @@ struct MovieDetailView: View {
                             Button(action: {
                                 if let url = movie.watchURL {
                                     UIApplication.shared.open(url, options: [:]) { success in
-                                        if !success { showInstallAlert = true }
+                                        if !success {
+                                            self.failedServiceName = movie.watchServiceName
+                                            self.showInstallAlert = true
+                                        }
                                     }
                                 }
                             }) {
@@ -104,17 +111,44 @@ struct MovieDetailView: View {
                         }
 
                         Button(action: {
-                            if let trailerURL = URL(string: movie.trailer) {
-                                UIApplication.shared.open(trailerURL)
-                            }
+                            isPlayingTrailer = true
                         }) {
                             HStack(spacing: 12) {
-                                Image(systemName: "film")
+                                Image(systemName: "play.rectangle.fill")
                                 Text("Play Trailer")
                             }
                         }
                         .focused($focusedElement, equals: .trailer)
                         .prefersDefaultFocus(movie.watch.first?.isEmpty ?? true, in: detailNamespace)
+                        .fullScreenCover(isPresented: $isPlayingTrailer) {
+                            TrailerPlayerView(videoURL: movie.trailer)
+                        }
+                        .contextMenu {
+                            Button("Open in YouTube App") {
+                                if let url = URL(string: movie.trailer) {
+                                    UIApplication.shared.open(url)
+                                }
+                            }
+                        }
+                        
+                        if movie.watch.count > 1 {
+                            Button(action: {
+                                showProviderList = true
+                            }) {
+                                Image(systemName: "rectangle.stack")
+                                    .font(.system(size: 30, weight: .bold))
+                                    .frame(width: 40, height: 40)
+                            }
+                            .focused($focusedElement, equals: .more)
+                            .sheet(isPresented: $showProviderList) {
+                                ProviderListView(
+                                    movie: movie,
+                                    isPresented: $showProviderList,
+                                    showInstallAlert: $showInstallAlert,
+                                    failedServiceName: $failedServiceName
+                                )
+                            }
+                        }
                     }
                     .padding(.top, 20)
                     .prefersDefaultFocus(true, in: detailNamespace)
@@ -141,10 +175,10 @@ struct MovieDetailView: View {
                     .cornerRadius(20)
             }
         }
-        .alert("\(movie.watchServiceName) Not Installed", isPresented: $showInstallAlert) {
+        .alert("\(failedServiceName) Not Installed", isPresented: $showInstallAlert) {
             Button("OK", role: .cancel) { }
         } message: {
-            Text("Please install the \(movie.watchServiceName) app from the App Store to watch this film or check below for other providers.")
+            Text("Please install the \(failedServiceName) app from the App Store to watch this film\(movie.watch.count>1 ? " or check other providers":"").")
         }
         .onAppear {
             if let firstLink = movie.watch.first, !firstLink.isEmpty {
@@ -157,5 +191,5 @@ struct MovieDetailView: View {
 }
 
 enum FocusElement {
-    case play, trailer, info
+    case play, trailer, more, info
 }

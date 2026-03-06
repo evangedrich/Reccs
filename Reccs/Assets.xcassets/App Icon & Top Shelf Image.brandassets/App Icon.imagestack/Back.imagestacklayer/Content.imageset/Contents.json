@@ -1,10 +1,12 @@
 {
   "images" : [
     {
+      "filename" : "reccs-tvos-icon-back-1x.png",
       "idiom" : "tv",
       "scale" : "1x"
     },
     {
+      "filename" : "reccs-tvos-icon-back-2x.png",
       "idiom" : "tv",
       "scale" : "2x"
     }

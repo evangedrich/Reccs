@@ -26,8 +26,9 @@ struct MovieCard: View {
                 VStack(spacing: 6) {
                     Text(movie.title.original)
                         .font(.headline)
-                        .fontWeight(.light)
+                        .fontWeight(.regular)
                         .multilineTextAlignment(.center)
+                        .environment(\._lineHeightMultiple, 0.8)
                         .fixedSize(horizontal: false, vertical: true)
                         .lineLimit(3)
                     Text(movie.year)

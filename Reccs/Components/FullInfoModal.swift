@@ -16,16 +16,46 @@ struct FullInfoModal: View {
         ZStack {
             Rectangle().fill(.ultraThinMaterial).ignoresSafeArea()
             
-            VStack(spacing: 40) {
+            VStack(spacing: 30) {
                 Text(movie.title.original)
                     .font(.title2)
                     .bold()
                 
                 ScrollView {
-                    Text(movie.info)
-                        .font(.body)
-                        .lineSpacing(4)
-                        .multilineTextAlignment(.leading)
+                    let processedMarkdown = movie.info.replacingOccurrences(of: "\n", with: "\n\n")
+                    
+                    if let attributedInfo = try? AttributedString(markdown: processedMarkdown, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)) {
+                        Text(attributedInfo)
+                            .font(.body)
+                            .lineSpacing(0)
+                            .multilineTextAlignment(.leading)
+                    } else {
+                        Text(movie.info)
+                            .font(.body)
+                            .lineSpacing(0)
+                            .multilineTextAlignment(.leading)
+                    }
+                        
+                    
+                    if !movie.genre.isEmpty {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 15) {
+                                ForEach(movie.genre, id: \.self) { genre in
+                                    Text(genre.uppercased())
+                                        .font(.caption)
+                                        .padding(.horizontal, 20)
+                                        .padding(.vertical, 10)
+                                        .background(
+                                            Capsule()
+                                                .fill(Color.white.opacity(0.15))
+                                        )
+                                }
+                            }
+                            .frame(minWidth: 1000)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.top, 20)
+                    }
                 }
                 .frame(maxWidth: 1000)
                 
@@ -34,7 +64,7 @@ struct FullInfoModal: View {
                 }
                 .prefersDefaultFocus(true, in: modalNamespace)
             }
-            .padding(100)
+            .padding(60)
             .focusScope(modalNamespace)
         }
     }

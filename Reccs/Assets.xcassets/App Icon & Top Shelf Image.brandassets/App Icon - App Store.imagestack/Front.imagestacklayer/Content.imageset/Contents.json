@@ -1,6 +1,7 @@
 {
   "images" : [
     {
+      "filename" : "tvOS-overlay.png",
       "idiom" : "tv"
     }
   ],

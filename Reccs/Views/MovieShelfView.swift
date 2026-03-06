@@ -36,7 +36,9 @@ struct MovieShelfView: View {
             .scrollTargetBehavior(.viewAligned)
             .contentMargins(.horizontal, 80, for: .scrollContent)
             .onChange(of: focusedID) { _, newValue in
-                scrollID = newValue
+                withAnimation(.spring(response: 0.25, dampingFraction: 0.9)) {
+                    scrollID = newValue
+                }
             }
             .scrollClipDisabled()
             .padding(.vertical, 10)
