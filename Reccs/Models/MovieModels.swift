@@ -67,9 +67,18 @@ extension MovieEntry {
         } else if webURL.contains("max.com") {
             let id = webURL.components(separatedBy: "/").last?.components(separatedBy: "?").first
             if let id = id { return URL(string: "https://play.max.com/movie/\(id)") }
+        } else if webURL.contains("hulu.com") {
+            let id = webURL.components(separatedBy: "/").last?.components(separatedBy: "?").first
+            if let id = id { return URL(string: "hulu://movie/\(id)") }
+        } else if webURL.contains("vimeo.com") {
+            let id = webURL.components(separatedBy: "/").last?.components(separatedBy: "?").first
+            if let id = id { return URL(string: "vimeo://://app.vimeo.com/\(id)") }
+        } else if webURL.contains("klassiki") {
+            let id = webURL.components(separatedBy: "/").last?.components(separatedBy: "?").first
+            if let id = id { return URL(string: "ott.klassiki1://\(id)") }
         } else if webURL.contains("kanopy.com") {
             let id = webURL.components(separatedBy: "/").last?.components(separatedBy: "?").first
-            if let id = id { return URL(string: "https://www.kanopy.com/product/\(id)") }
+            if let id = id { return URL(string: "kanopy-api://video/\(id)") }
         }
         return URL(string: finalURLString)
     }

@@ -187,6 +187,8 @@ struct MovieDetailView: View {
                 focusedElement = .trailer
             }
         }
+        .toolbar(.hidden, for: .tabBar)
+        .ignoresSafeArea(.container, edges: .top)
     }
 }
 

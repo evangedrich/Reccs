@@ -44,7 +44,7 @@ struct MovieShelfView: View {
             .padding(.vertical, 10)
         }
         .onAppear {
-            scrollID = store.films.first?.id
+            scrollID = filteredMovies.first?.id
         }
     }
 }
