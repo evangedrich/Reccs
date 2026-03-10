@@ -9,9 +9,10 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var store = MovieStore()
+    @State private var selectedTab = 0
     @FocusState private var isHomeFocused: Bool
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             NavigationStack {
                 ScrollView {
                     VStack(spacing: 60) {
@@ -37,23 +38,20 @@ struct ContentView: View {
                 .navigationDestination(for: MovieEntry.self) { movie in
                     MovieDetailView(movie: movie)
                 }
+                .defaultFocus($isHomeFocused, selectedTab == 0) 
                 .focused($isHomeFocused)
             }
-            .tabItem {
-                Text("Home")
-            }
+            .tabItem { Text("Home") }
+            .tag(0)
             
             GeoschemeView()
-                .tabItem {
-                    Text("Geoscheme")
-                }
+                .tabItem { Text("Geoscheme") }
+                .tag(1)
             
             SearchView()
-                .tabItem {
-                    Text("Search")
-                }
+                .tabItem { Text("Search") }
+                .tag(2)
         }
-        .defaultFocus($isHomeFocused, true)
     }
 }
 
