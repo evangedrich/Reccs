@@ -8,7 +8,7 @@
 import SwiftUI
 
 // SVG
-struct Group1: View {
+struct MapPaths: View {
 
   static let intrinsicSize = CGSize(width: 1440, height: 720)
 
@@ -34613,10 +34613,10 @@ struct Group1_Previews: PreviewProvider {
 
   static var previews: some View {
     VStack {
-      Group1()
+      MapPaths()
         .resizable()
-        .frame(width  : Group1.intrinsicSize.width,
-               height : Group1.intrinsicSize.height)
+        .frame(width  : MapPaths.intrinsicSize.width,
+               height : MapPaths.intrinsicSize.height)
         .background(Color.clear.border(Color.green))
         .padding()
       Text("Size: 1440.0x720.0").padding(.bottom)

@@ -78,7 +78,7 @@ extension MovieEntry {
             if let id = id { return URL(string: "ott.klassiki1://\(id)") }
         } else if webURL.contains("kanopy.com") {
             let id = webURL.components(separatedBy: "/").last?.components(separatedBy: "?").first
-            if let id = id { return URL(string: "kanopy-api://video/\(id)") }
+            if let id = id { return URL(string: "https://www.kanopy.com/product/justwatch-\(id)") }
         }
         return URL(string: finalURLString)
     }

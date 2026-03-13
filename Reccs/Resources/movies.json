@@ -28,8 +28,8 @@
     "trailer": "https://youtu.be/dVunYbRl2hA",
     "color": "#8d796e",
     "location": {
-      "x": 48,
-      "y": 32,
+      "x": -7.9161,
+      "y": 31.0343,
       "name": "High Atlas Mountains"
     }
   },
@@ -62,8 +62,8 @@
     "trailer": "https://youtu.be/G7ToKioHCoU",
     "color": "#5a949c",
     "location": {
-      "x": 59.4,
-      "y": 55.5,
+      "x": 36.6700,
+      "y": -1.1600,
       "name": "Kabuku Village"
     }
   },
@@ -93,8 +93,8 @@
     "trailer": "https://youtu.be/1nLWevhitPM",
     "color": "#3d2d2b",
     "location": {
-      "x": 55,
-      "y": 69.2,
+      "x": 20.5000,
+      "y": -19.6667,
       "name": "Nyae Nyae Region"
     }
   },
@@ -127,8 +127,8 @@
     "trailer": "https://youtu.be/ja1QEpgUszo",
     "color": "#8a3b36",
     "location": {
-      "x": 56.8,
-      "y": 76.9,
+      "x": 26.4194,
+      "y": -32.2968,
       "name": "eMpuma-Kapa"
     }
   },
@@ -159,8 +159,8 @@
     "trailer": "https://youtu.be/PVLfEqbquN8",
     "color": "#1f3057",
     "location": {
-      "x": 54,
-      "y": 51.5,
+      "x": 18.0000,
+      "y": 4.0000,
       "name": "Lobaye Region"
     }
   },
@@ -193,8 +193,8 @@
     "trailer": "https://youtu.be/GRlNG9lJ6rs?t=3",
     "color": "#d4a555",
     "location": {
-      "x": 47,
-      "y": 44.5,
+      "x": -7.6686,
+      "y": 14.9961,
       "name": "Dilli, Mali"
     }
   },
@@ -227,8 +227,8 @@
     "trailer": "https://youtu.be/Wqxjorhxx0Y",
     "color": "#a09a96",
     "location": {
-      "x": 32.66,
-      "y": 5.51,
+      "x": -81.8000,
+      "y": 69.3811,
       "name": "Igloolik"
     }
   },
@@ -261,8 +261,8 @@
     "trailer": "https://youtu.be/dZC_MimYhos",
     "color": "#6b574e",
     "location": {
-      "x": 29.7,
-      "y": 24.05,
+      "x": -79.3832,
+      "y": 43.6532,
       "name": "Toronto"
     }
   },
@@ -293,8 +293,8 @@
     "trailer": "https://youtu.be/Rp_UIamM2kU",
     "color": "#a87d4f",
     "location": {
-      "x": 20.2,
-      "y": 33.5,
+      "x": -110.9343,
+      "y": 31.3404,
       "name": "Nogales"
     }
   },
@@ -328,8 +328,8 @@
     "trailer": "https://youtu.be/Kl2Yh6YcMBU",
     "color": "#b68650",
     "location": {
-      "x": 21.3,
-      "y": 30.5,
+      "x": -108.7426,
+      "y": 35.5281,
       "name": "Gallup"
     }
   },
@@ -360,8 +360,8 @@
     "trailer": "https://youtu.be/DnbOw5Nuq2U",
     "color": "#2d3940",
     "location": {
-      "x": 18.65,
-      "y": 18.3,
+      "x": -132.0000,
+      "y": 53.0000,
       "name": "Haida Gwaii"
     }
   },
@@ -395,8 +395,8 @@
     "trailer": "https://youtu.be/enT3zQzvhGw",
     "color": "#3a3b5c",
     "location": {
-      "x": 24,
-      "y": 23.7,
+      "x": -102.0911,
+      "y": 43.3444,
       "name": "Pine Ridge Reservation"
     }
   },
@@ -426,8 +426,8 @@
     "trailer": "https://youtu.be/NQs5m9haasM",
     "color": "#6e8079",
     "location": {
-      "x": 32.8,
-      "y": 46.4,
+      "x": -61.2000,
+      "y": 13.2500,
       "name": "St. Vincent"
     }
   },
@@ -459,8 +459,8 @@
     "trailer": "https://youtu.be/EJfvKnLPqFM",
     "color": "#6d6d8d",
     "location": {
-      "x": 24.6,
-      "y": 45.2,
+      "x": -90.6011,
+      "y": 14.3808,
       "name": "Pacaya Volcano"
     }
   },
@@ -491,8 +491,8 @@
     "trailer": "https://youtu.be/AA3Yo7kcPQ4",
     "color": "#593f33",
     "location": {
-      "x": 29.5,
-      "y": 64,
+      "x": -70.4200,
+      "y": -13.9100,
       "name": "Allincapac"
     }
   },
@@ -524,9 +524,9 @@
     "trailer": "https://youtu.be/2tK-5dydqp8",
     "color": "#2A3829",
     "location": {
-      "x": 32,
-      "y": 53,
-      "name": "Yanomami"
+      "x": -62.7719,
+      "y": 0.4461,
+      "name": "Urihipë"
     }
   },
   {
@@ -556,9 +556,9 @@
     "trailer": "https://youtu.be/j_WZGMo9BXo",
     "color": "#636341",
     "location": {
-      "x": 33,
-      "y": 70.6,
-      "name": ""
+      "x": -59.0000,
+      "y": -21.0000,
+      "name": "Gran Chaco"
     }
   },
   {
@@ -589,8 +589,8 @@
     "trailer": "https://youtu.be/5JVlgU_vV1E",
     "color": "#563229",
     "location": {
-      "x": 78,
-      "y": 12,
+      "x": 129.1500,
+      "y": 66.4166,
       "name": "Yakutia"
     }
   },
@@ -622,8 +622,8 @@
     "trailer": "https://youtu.be/KVKnN-9czbk",
     "color": "#81777b",
     "location": {
-      "x": 63.5,
-      "y": 8,
+      "x": 72.0000,
+      "y": 70.0000,
       "name": "Yamalia"
     }
   },
@@ -660,8 +660,8 @@
     "trailer": "https://youtu.be/FFiHfDBt9lE",
     "color": "#387DB5",
     "location": {
-      "x": 79.3,
-      "y": 26.9,
+      "x": 116.4074,
+      "y": 39.9042,
       "name": "Beijing"
     }
   },
@@ -693,8 +693,8 @@
     "trailer": "https://youtu.be/q2OfJYvjgQ8",
     "color": "#504134",
     "location": {
-      "x": 78.6,
-      "y": 47.3,
+      "x": 106.6297,
+      "y": 10.8231,
       "name": "Ho Chi Minh City"
     }
   },
@@ -727,8 +727,8 @@
     "trailer": "https://youtu.be/xW3yryL6vCw",
     "color": "#deae73",
     "location": {
-      "x": 76.89,
-      "y": 45.2,
+      "x": 100.5018,
+      "y": 13.7563,
       "name": "Bangkok"
     }
   },
@@ -760,8 +760,8 @@
     "trailer": "https://youtu.be/Q5nR18GjjuA",
     "color": "#4a3231",
     "location": {
-      "x": 78,
-      "y": 46.6,
+      "x": 104.9282,
+      "y": 11.5564,
       "name": "Phnom Penh"
     }
   },
@@ -793,8 +793,8 @@
     "trailer": "https://youtu.be/IbT7lt8NZ6k",
     "color": "#a09ca1",
     "location": {
-      "x": 71.7,
-      "y": 34.6,
+      "x": 82.9167,
+      "y": 29.2333,
       "name": "Dolpo Region"
     }
   },
@@ -827,8 +827,8 @@
     "trailer": "https://youtu.be/Cl3-aUW_p54",
     "color": "#717862",
     "location": {
-      "x": 69.7,
-      "y": 31,
+      "x": 77.5770,
+      "y": 34.1526,
       "name": "Ladakh"
     }
   },
@@ -861,8 +861,8 @@
     "trailer": "https://youtu.be/NgBoMJy386M?t=4",
     "color": "#627147",
     "location": {
-      "x": 70.5,
-      "y": 41.3,
+      "x": 78.6186,
+      "y": 19.4629,
       "name": "Adilabad Forest"
     }
   },
@@ -894,8 +894,8 @@
     "trailer": "https://youtu.be/PgI2vnCUj2U",
     "color": "#8c735a",
     "location": {
-      "x": 60.4,
-      "y": 31.7,
+      "x": 41.5000,
+      "y": 33.0000,
       "name": "Anbar Province"
     }
   },
@@ -928,8 +928,8 @@
     "trailer": "https://youtu.be/cuGLOAy6PUg",
     "color": "#c46b3b",
     "location": {
-      "x": 68.3,
-      "y": 24.5,
+      "x": 77.1444,
+      "y": 43.3575,
       "name": "Alatau Steppe"
     }
   },
@@ -961,8 +961,8 @@
     "trailer": "https://youtu.be/C_VoYtZ4hnA",
     "color": "#db8b40",
     "location": {
-      "x": 67.9,
-      "y": 25.25,
+      "x": 76.5861,
+      "y": 42.2472,
       "name": "Bar-Bulak Village"
     }
   },
@@ -993,8 +993,8 @@
     "trailer": "https://youtu.be/AQSyLUDVihY",
     "color": "#49505c",
     "location": {
-      "x": 62.25,
-      "y": 24.3,
+      "x": 51.1667,
+      "y": 43.6500,
       "name": "Aktau City"
     }
   },
@@ -1028,8 +1028,8 @@
     "trailer": "https://youtu.be/MRiD5B2rKOg",
     "color": "#906b5f",
     "location": {
-      "x": 71.5,
-      "y": 20,
+      "x": 93.3000,
+      "y": 46.4000,
       "name": "Altai Region"
     }
   },
@@ -1061,8 +1061,8 @@
     "trailer": "https://youtu.be/xECEAPfdqic",
     "color": "#363033",
     "location": {
-      "x": 54.15,
-      "y": 18,
+      "x": 21.0122,
+      "y": 52.2297,
       "name": "Warsaw"
     }
   },
@@ -1096,8 +1096,8 @@
     "trailer": "https://youtu.be/R-fQPTwma9o",
     "color": "#78463e",
     "location": {
-      "x": 48.55,
-      "y": 21.17,
+      "x": -2.9326,
+      "y": 48.2020,
       "name": "France"
     }
   },
@@ -1130,8 +1130,8 @@
     "trailer": "https://youtu.be/tH_MY8FJuYo",
     "color": "#5E4229",
     "location": {
-      "x": 86.4,
-      "y": 64,
+      "x": 135.0000,
+      "y": -12.5000,
       "name": "Arafura Swamp"
     }
   },
@@ -1163,8 +1163,8 @@
     "trailer": "https://youtu.be/WSId_DLWtIs",
     "color": "#a69577",
     "location": {
-      "x": 62.55,
-      "y": 68.3,
+      "x": 47.5079,
+      "y": -18.8792,
       "name": "Antananarivo"
     }
   },
@@ -1197,8 +1197,8 @@
     "trailer": "https://youtu.be/Tb3Vslnviwo",
     "color": "#313d22",
     "location": {
-      "x": 95.293,
-      "y": 68.8,
+      "x": 169.3333,
+      "y": -19.5000,
       "name": "Tanna, Vanuatu"
     }
   },
@@ -1229,8 +1229,8 @@
     "trailer": "https://youtu.be/CMiJlDi5NaY",
     "color": "#918e89",
     "location": {
-      "x": 96.6,
-      "y": 50.3,
+      "x": 171.3803,
+      "y": 7.0897,
       "name": "Majuro"
     }
   },
@@ -1262,8 +1262,8 @@
     "trailer": "https://youtu.be/AGXopPdTAGs",
     "color": "#917146",
     "location": {
-      "x": 2.1,
-      "y": 63.6,
+      "x": -171.7500,
+      "y": -13.9167,
       "name": "Upolu"
     }
   },
@@ -1296,8 +1296,8 @@
     "trailer": "https://youtu.be/QHgEuzv-zNA?t=2",
     "color": "#4f3457",
     "location": {
-      "x": 51.7,
-      "y": 43.5,
+      "x": 7.9911,
+      "y": 16.9733,
       "name": "Agadez, Niger"
     }
   },
@@ -1330,8 +1330,8 @@
     "trailer": "https://youtu.be/1W8m1IjLJB8",
     "color": "#9e603a",
     "location": {
-      "x": 73.8,
-      "y": 35.45,
+      "x": 89.8333,
+      "y": 28.0000,
       "name": "Gasa District"
     }
   },
@@ -1364,8 +1364,8 @@
     "trailer": "https://youtu.be/kcLDCNSqimA",
     "color": "#8f562e",
     "location": {
-      "x": 85.1,
-      "y": 72,
+      "x": 135.3330,
+      "y": -24.1350,
       "name": "Iwupataka"
     }
   },
@@ -1398,9 +1398,9 @@
     "trailer": "https://youtu.be/pRH5u5lpArQ",
     "color": "#366e37",
     "location": {
-      "x": 2.75,
-      "y": 63.85,
-      "name": "\"American Samoa\""
+      "x": -170.1322,
+      "y": -14.2710,
+      "name": "Amerika Sāmoa"
     }
   }
 ]

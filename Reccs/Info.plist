@@ -4,7 +4,7 @@
 <dict>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
-		<string>kanopy</string>
+		<string>com.kanopy.Kanopy</string>
 		<string>nflx</string>
 		<string>com.apple.TVAppStore</string>
 		<string>primevideo</string>

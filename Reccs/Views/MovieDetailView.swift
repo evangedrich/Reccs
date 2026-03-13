@@ -84,6 +84,10 @@ struct MovieDetailView: View {
                         if let firstLink = movie.watch.first, !firstLink.isEmpty {
                             Button(action: {
                                 if let url = movie.watchURL {
+                                    let activity = NSUserActivity(activityType: NSUserActivityTypeBrowsingWeb)
+                                    activity.webpageURL = url
+                                    activity.becomeCurrent()
+
                                     UIApplication.shared.open(url, options: [:]) { success in
                                         if !success {
                                             self.failedServiceName = movie.watchServiceName
