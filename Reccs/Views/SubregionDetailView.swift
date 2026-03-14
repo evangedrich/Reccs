@@ -9,6 +9,7 @@ import SwiftUI
 
 struct SubregionDetailView: View {
     @State private var store = MovieStore()
+    @FocusState private var focusedElement: String?
     let id: String
     var body: some View {
         ZStack {
@@ -27,9 +28,10 @@ struct SubregionDetailView: View {
                     }
                     ZStack {
                         GlobeView(
-                            textureImage: "blue-marble",
+                            textureImage: "blue-marble-3",
                             horizontalRotation: getHorizontalRotation(for: id),
-                            verticalRotation: getVerticalRotation(for: id)
+                            verticalRotation: getVerticalRotation(for: id),
+                            focusID: focusedElement
                         )
                     }
                     .frame(width: 550, height: 550)
@@ -42,7 +44,8 @@ struct SubregionDetailView: View {
                         Spacer(minLength: 0)
                         MovieStackView(
                             movies: store.films.filter { $0.id.hasPrefix(id) },
-                            columns: 2
+                            columns: 2,
+                            focusedElement: $focusedElement
                         )
                         Spacer(minLength: 0)
                     }

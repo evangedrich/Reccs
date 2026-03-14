@@ -10,6 +10,7 @@ import SwiftUI
 struct MovieStackView: View {
     let movies: [MovieEntry]
     let columns: Int
+    var focusedElement: FocusState<String?>.Binding
     var body: some View {
         let rows = stride(from: 0, to: movies.count, by: columns).map { $0 }
         VStack(spacing: 50) {
@@ -18,6 +19,7 @@ struct MovieStackView: View {
                     ForEach(rowIndex..<min(rowIndex + columns, movies.count), id: \.self) { index in
                         MovieCard(movie: movies[index])
                             .scaleEffect(1.0)
+                            .focused(focusedElement, equals: movies[index].id)
                     }
                 }
             }
