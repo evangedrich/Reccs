@@ -75,6 +75,7 @@ func getHorizontalRotation(for id: String) -> Double {
     if id.hasPrefix("EU") { return 320 }
     if id=="OCMD" { return -40 }
     if ["OCAU", "OCML"].contains(id) { return 230 }
+    if id=="OCPL" { return 160 }
     if id.hasPrefix("OC") { return 180 }
     return 0.0
 }
@@ -86,7 +87,7 @@ func getVerticalRotation(for id: String) -> Double {
     if id=="ASSE" { return 0 }
     if id.hasPrefix("AS") { return 30 }
     if id.hasPrefix("EU") { return 40 }
-    if ["OCAU", "OCML"].contains(id) { return -10 }
+    if ["OCAU", "OCML", "OCPL"].contains(id) { return -10 }
     if id.hasPrefix("OC") { return 0 }
     return 0.0
 }

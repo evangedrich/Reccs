@@ -366,6 +366,40 @@
     }
   },
   {
+    "id": "AMNWCFF1",
+    "title": {
+      "original": "Małni",
+      "translation": "Towards The Ocean, Towards The Shore"
+    },
+    "year": "2020",
+    "runtime": 82,
+    "genre": [
+      "Poetic",
+      "Experimental"
+    ],
+    "tags": [
+      ""
+    ],
+    "group": {
+      "people": "Chinookan",
+      "language": "Chinuk Wawa",
+      "location": "Oregon, US"
+    },
+    "info": "*Małni* is poetic, experimental debut feature circling the origin of the death myth from the Chinookan people in the Pacific Northwest. At its center are Sweetwater Sahme and Jordan Mercier, who take separate paths contemplating their afterlife, rebirth, and death.\nDir/Scr **SKY HOPINKA**'s probing questions about humanity’s place on earth and other worlds will have audiences thinking (and dreaming) long after.",
+    "watch": [
+      "https://www.kanopy.com/en/product/malni-towards-ocean-towards-shore",
+      "https://tv.apple.com/us/movie/malni---towards-the-ocean-towards-the-shore",
+      "https://www.amazon.com/gp/video/detail/B0BVJSLBWD"
+    ],
+    "trailer": "https://youtu.be/MiFeVvwkY6I",
+    "color": "#182111",
+    "location": {
+      "x": -123.5700,
+      "y": 46.1500,
+      "name": "Wimahl"
+    }
+  },
+  {
     "id": "AMINCFF",
     "title": {
       "original": "The Unknown Country"
@@ -1299,6 +1333,38 @@
       "x": 7.9911,
       "y": 16.9733,
       "name": "Agadez, Niger"
+    }
+  },
+  {
+    "id": "AMSOGFF",
+    "title": {
+      "original": "La vida en común",
+      "translation": "Living All Together"
+    },
+    "year": "2019",
+    "runtime": 70,
+    "genre": [
+      "Docudrama",
+      "Coming-of-Age"
+    ],
+    "tags": [
+      ""
+    ],
+    "group": {
+      "people": "Rankülche",
+      "language": "Spanish",
+      "country": "Argentina"
+    },
+    "info": "A puma is stalking Pueblo Ranquel, an indigenous community settled in the northern Argentinian desert, in a modern camp built to accommodate them. As if to break free of their youth, some young boys start stalking the animal, a traditional rite of passage.\nMost often leaving adults out of the frame, the filmmaker interweaves history with small stories, to trace the contours of complex identities: adolescents evolving between the ancestral and the future, between tradition and homogenization.",
+    "watch": [
+      ""
+    ],
+    "trailer": "https://youtu.be/enegHoLKKI4",
+    "color": "#a9998d",
+    "location": {
+      "x": -65.7169,
+      "y": -34.6082,
+      "name": "Ranquel Nation"
     }
   },
   {

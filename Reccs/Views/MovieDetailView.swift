@@ -26,7 +26,7 @@ struct MovieDetailView: View {
                         MongolianText(
                             text: movie.title.original,
                             font: .system(size: 80, weight: .heavy),
-                            columnWidth: 85
+                            columnWidth: 82
                         )
                     } else {
                         Text(movie.title.original)
