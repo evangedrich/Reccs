@@ -17,9 +17,17 @@ struct FullInfoModal: View {
             Rectangle().fill(.ultraThinMaterial).ignoresSafeArea()
             
             VStack(spacing: 30) {
-                Text(movie.title.original)
-                    .font(.title2)
-                    .bold()
+                if movie.title.original.isMongolian {
+                    MongolianText(
+                        text: movie.title.original,
+                        font: .title2,
+                        columnWidth: 56
+                    )
+                } else {
+                    Text(movie.title.original)
+                        .font(.title2)
+                        .bold()
+                }
                 
                 ScrollView {
                     let processedMarkdown = movie.info.replacingOccurrences(of: "\n", with: "\n\n")

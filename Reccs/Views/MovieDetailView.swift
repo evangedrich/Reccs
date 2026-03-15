@@ -22,9 +22,17 @@ struct MovieDetailView: View {
             Color(hex: movie.color).ignoresSafeArea()
             HStack(spacing: 60) {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text(movie.title.original)
-                        .font(.system(size: 80, weight: .heavy))
-                        .environment(\._lineHeightMultiple, 0.8)
+                    if movie.title.original.isMongolian {
+                        MongolianText(
+                            text: movie.title.original,
+                            font: .system(size: 80, weight: .heavy),
+                            columnWidth: 85
+                        )
+                    } else {
+                        Text(movie.title.original)
+                            .font(.system(size: 80, weight: .heavy))
+                            .environment(\._lineHeightMultiple, 0.8)
+                    }
                     
                     if movie.title.transliteration != nil || movie.title.translation != nil {
                         (
@@ -155,6 +163,7 @@ struct MovieDetailView: View {
                         }
                     }
                     .padding(.top, 20)
+                    .padding(.bottom, -12)
                     .prefersDefaultFocus(true, in: detailNamespace)
                     
                     Button {
@@ -163,7 +172,7 @@ struct MovieDetailView: View {
                         InfoTextPreview(text: movie.info)
                     }
                     .focused($focusedElement, equals: .info)
-                    .buttonStyle(.plain)
+                    .buttonStyle(TransparentFocusStyle())
                     .padding(.top, 20)
                     .fullScreenCover(isPresented: $showFullInfo) {
                         FullInfoModal(movie: movie, isPresented: $showFullInfo)
@@ -198,4 +207,28 @@ struct MovieDetailView: View {
 
 enum FocusElement {
     case play, trailer, more, info
+}
+
+
+
+struct TransparentFocusStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        TransparentFocusView(configuration: configuration)
+    }
+}
+struct TransparentFocusView: View {
+    let configuration: ButtonStyle.Configuration
+    @Environment(\.isFocused) private var isFocused: Bool // Detects tvOS focus
+
+    var body: some View {
+        configuration.label
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(.white)
+                    .opacity(isFocused ? 0.15 : 0.0)
+            )
+            .scaleEffect(isFocused ? 1.04 : 1.02) // Subtle lift effect
+            .animation(.easeOut(duration: 0.2), value: isFocused)
+    }
 }

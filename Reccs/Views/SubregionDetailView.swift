@@ -28,9 +28,10 @@ struct SubregionDetailView: View {
                     }
                     ZStack {
                         GlobeView(
-                            textureImage: "blue-marble-3",
+                            textureImage: "globe-\(id)",
                             horizontalRotation: getHorizontalRotation(for: id),
                             verticalRotation: getVerticalRotation(for: id),
+                            subregionID: id,
                             focusID: focusedElement
                         )
                     }
@@ -69,6 +70,7 @@ func getHorizontalRotation(for id: String) -> Double {
     if ["AMHI", "AMLO", "AMSO"].contains(id) { return 64 }
     if id.hasPrefix("AM") { return 95 }
     if id=="ASSE" { return 250 }
+    if id=="ASWE" { return 300 }
     if id.hasPrefix("AS") { return 270 }
     if id.hasPrefix("EU") { return 320 }
     if id=="OCMD" { return -40 }

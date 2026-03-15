@@ -10,9 +10,11 @@ import SceneKit
 
 struct GlobeView: UIViewRepresentable {
     @State private var store = MovieStore()
+    let defaultTexture: String = "blue-marble-3"
     let textureImage: String
     let horizontalRotation: Double
     let verticalRotation: Double
+    let subregionID: String
     let focusID: String?
 
     func makeUIView(context: Context) -> SCNView {
@@ -25,13 +27,22 @@ struct GlobeView: UIViewRepresentable {
     }
 
     func updateUIView(_ scnView: SCNView, context: Context) {
-        // 1. Handle Dot Color Updates
-        // This runs whenever focusID changes, but DOES NOT reset the scene
         guard let globeNode = scnView.scene?.rootNode.childNode(withName: "GlobeNode", recursively: true) else { return }
         
+        // remove the old pulse from anywhere it might be
         globeNode.enumerateChildNodes { (node, _) in
-            if let dotName = node.name {
-                node.geometry?.firstMaterial?.diffuse.contents = (dotName == focusID) ? UIColor.red : getColor(for: dotName)
+            if node.name == "SonarPulse" {
+                node.removeFromParentNode()
+            }
+        }
+        let currentFocus = focusID ?? "NONE"
+        globeNode.enumerateChildNodes { (node, _) in
+            guard let filmID = node.name, filmID != "SonarPulse" else { return }
+            let isFocused = filmID == currentFocus
+            node.geometry?.firstMaterial?.diffuse.contents = isFocused ? UIColor(Color(hex: "#d62b2b")) : UIColor.white
+            if isFocused {
+                let pulse = createSonarPulse(color: UIColor(Color(hex: "#d62b2b")))
+                node.addChildNode(pulse)
             }
         }
     }
@@ -40,6 +51,10 @@ struct GlobeView: UIViewRepresentable {
         let scene = SCNScene()
         scene.background.contents = UIColor(red: 0.094, green: 0.094, blue: 0.094, alpha: 1.0)
         
+        let bottomSphere = SCNSphere(radius: 4.99) // Slightly smaller so dots don't sink
+        let bottomNode = SCNNode(geometry: bottomSphere)
+        bottomSphere.firstMaterial?.diffuse.contents = UIImage(named: defaultTexture)
+        
         let sphere = SCNSphere(radius: 5)
         let globeNode = SCNNode(geometry: sphere)
         globeNode.name = "GlobeNode" // Named so updateUIView can find it
@@ -47,21 +62,23 @@ struct GlobeView: UIViewRepresentable {
         material.diffuse.contents = UIImage(named: textureImage)
         sphere.materials = [material]
         
+        globeNode.opacity = 0
+        
         // Add dots (initially all white)
         for film in store.films {
-            let disk = SCNCylinder(radius: 0.07, height: 0.01)
-            disk.firstMaterial?.diffuse.contents = getColor(for: film.id)
-            let dotNode = SCNNode(geometry: disk)
+            let sphere = SCNSphere(radius: 0.08)
+            let material = SCNMaterial()
+            material.diffuse.contents = UIColor.white
+            material.transparency = film.id.hasPrefix(subregionID) ? 1.0 : 0.12
+            sphere.materials = [material]
+            let dotNode = SCNNode(geometry: sphere)
             dotNode.name = film.id
-            let pos = coordToVector(lat: film.location.y, lon: film.location.x)
-            dotNode.position = pos
-            dotNode.look(at: SCNVector3(pos.x * 2, pos.y * 2, pos.z * 2))
-            dotNode.eulerAngles.x += .pi / 2
-            
+            dotNode.position = coordToVector(lat: film.location.y, lon: film.location.x)
             globeNode.addChildNode(dotNode)
         }
         
         let tiltNode = SCNNode()
+        tiltNode.addChildNode(bottomNode)
         tiltNode.addChildNode(globeNode)
 
         let tiltAngle = Float(verticalRotation * .pi / 180)
@@ -71,10 +88,18 @@ struct GlobeView: UIViewRepresentable {
         tiltNode.eulerAngles.x = tiltAngle
         
         // Always play the animation on creation
+        bottomNode.eulerAngles.y = startSpin
         globeNode.eulerAngles.y = startSpin
         let spinAction = SCNAction.rotateTo(x: 0, y: CGFloat(targetSpin), z: 0, duration: 1.0, usesShortestUnitArc: true)
         spinAction.timingMode = .easeOut
+        
+        let fadeIn = SCNAction.fadeIn(duration: 1.0)
+        
         globeNode.runAction(spinAction)
+        
+        bottomNode.runAction(spinAction)
+        globeNode.runAction(spinAction)
+        globeNode.runAction(fadeIn)
         
         scene.rootNode.addChildNode(tiltNode)
         
@@ -114,26 +139,57 @@ func coordToVector(lat: Double, lon: Double, radius: Float = 5) -> SCNVector3 {
     return SCNVector3(x, y, z)
 }
 
-func getColor(for id: String) -> UIColor {
-    let subregion = String(id.prefix(4)).uppercased()
-    let swiftUIColor: Color
+//func getColor(for id: String) -> UIColor {
+//    let subregion = String(id.prefix(4)).uppercased()
+//    let swiftUIColor: Color
+//    
+//    switch true {
+//    case ["AMNO", "AFSO", "ASSO"].contains(subregion):
+//        swiftUIColor = Color(hex: "#7146e2") //purple
+//    case ["ASHI", "OCML", "OCMD", "AFNO", "AMIN", "AMCR", "AMSO"].contains(subregion):
+//        swiftUIColor = Color(hex: "#e85451") //red
+//    case ["WEEU", "AMCE", "AFEA", "OCAU", "ASEA"].contains(subregion):
+//        swiftUIColor = Color(hex: "#ff9d54") //orange
+//    case ["AMNW", "ASNO", "AMLO", "ASWE", "OCMC"].contains(subregion):
+//        swiftUIColor = Color(hex: "#6a95f0") //blue
+//    case ["ASSE", "ASIN", "EUEA", "AFWE", "AMHI", "AMSW"].contains(subregion):
+//        swiftUIColor = Color(hex: "#ffd070") //yellow
+//    case ["ASCE", "AMEA", "OCPL", "AFCE"].contains(subregion):
+//        swiftUIColor = Color(hex: "#50d895") //green
+//    default: swiftUIColor = .white
+//    }
+//    
+//    // Convert SwiftUI Color to UIKit's UIColor
+//    return UIColor(swiftUIColor)
+//}
+
+private func createSonarPulse(color: UIColor) -> SCNNode {
+    // Create a sphere slightly larger than your 0.08 dots
+    let pulseSphere = SCNSphere(radius: 0.09)
+    let material = SCNMaterial()
+    material.diffuse.contents = color
+    material.transparency = 0.5
+    // Makes it look like it's "glowing"
+    material.lightingModel = .constant
+    pulseSphere.materials = [material]
     
-    switch true {
-    case ["AMNO", "AFSO", "ASSO"].contains(subregion):
-        swiftUIColor = Color(hex: "#7152c0") //purple
-    case ["ASHI", "OCML", "OCMD", "AFNO", "AMIN", "AMCR", "AMSO"].contains(subregion):
-        swiftUIColor = Color(hex: "#d86563") //red
-    case ["WEEU", "AMCE", "AFEA", "OCAU", "ASEA"].contains(subregion):
-        swiftUIColor = Color(hex: "#efab79") //orange
-    case ["AMNW", "ASNO", "AMLO", "ASWE", "OCMC"].contains(subregion):
-        swiftUIColor = Color(hex: "#7d9ee0") //blue
-    case ["ASSE", "ASIN", "EUEA", "AFWE", "AMHI", "AMSW"].contains(subregion):
-        swiftUIColor = Color(hex: "#ffdb94") //yellow
-    case ["ASCE", "AMEA", "OCPL", "AFCE"].contains(subregion):
-        swiftUIColor = Color(hex: "#6ec79b") //green
-    default: swiftUIColor = .white
-    }
+    let pulseNode = SCNNode(geometry: pulseSphere)
+    pulseNode.name = "SonarPulse"
     
-    // Convert SwiftUI Color to UIKit's UIColor
-    return UIColor(swiftUIColor)
+    // Animation: Scale up to 3x size while fading to 0 opacity
+    let scaleUp = SCNAction.scale(to: 3.0, duration: 1.5)
+    let fadeOut = SCNAction.fadeOut(duration: 1.5)
+    let group = SCNAction.group([scaleUp, fadeOut])
+    
+    // Reset: Instantly shrink and become visible again
+    let reset = SCNAction.group([
+        SCNAction.scale(to: 1.0, duration: 0),
+        SCNAction.fadeIn(duration: 0)
+    ])
+    
+    // Loop forever
+    let sequence = SCNAction.sequence([group, reset])
+    pulseNode.runAction(SCNAction.repeatForever(sequence))
+    
+    return pulseNode
 }

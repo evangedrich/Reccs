@@ -13,9 +13,9 @@ struct GeoschemeView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 10) {
-                Text(focusedSubregion != nil ? (SubregionNames[focusedSubregion!] ?? "") : "Select a subregion")
-                    .font(.system(size: 34))
-                    .frame(height: 32)
+                //Text(focusedSubregion != nil ? (SubregionNames[focusedSubregion!] ?? "") : "Select a subregion")
+                    //.font(.system(size: 34))
+                    //.frame(height: 32)
                 ZStack {
                     // LAYER 1: Complete Background Map
                     MapPaths()

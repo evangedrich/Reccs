@@ -24,13 +24,17 @@ struct MovieCard: View {
                     .clipped()
                     .cornerRadius(12)
                 VStack(spacing: 6) {
-                    Text(movie.title.original)
-                        .font(.headline)
-                        .fontWeight(.regular)
-                        .multilineTextAlignment(.center)
-                        .environment(\._lineHeightMultiple, 0.8)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .lineLimit(3)
+                    if movie.title.original.isMongolian {
+                        MongolianText(text: movie.title.original)
+                    } else {
+                        Text(movie.title.original)
+                            .font(.headline)
+                            .fontWeight(.regular)
+                            .multilineTextAlignment(.center)
+                            .environment(\._lineHeightMultiple, 0.8)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .lineLimit(3)
+                    }
                     Text(movie.year)
                         .font(.caption)
                         .foregroundColor(.secondary)
