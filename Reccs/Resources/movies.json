@@ -1162,7 +1162,7 @@
       "https://www.amazon.com/gp/video/detail/B0F9LNDH49"
     ],
     "trailer": "https://youtu.be/tH_MY8FJuYo",
-    "color": "#5E4229",
+    "color": "#6A4A33",
     "location": {
       "x": 135.0000,
       "y": -12.5000,
@@ -1433,6 +1433,39 @@
       "x": 135.3330,
       "y": -24.1350,
       "name": "Iwupataka"
+    }
+  },
+  {
+    "id": "OCMDGFF",
+    "title": {
+      "original": "Tantara malagasy",
+      "translation": "Disco Afrika: A Malagasy Story"
+    },
+    "year": "2023",
+    "runtime": 81,
+    "genre": [
+      "Drama",
+      "Political",
+      "Coming-of-Age"
+    ],
+    "tags": [
+      ""
+    ],
+    "group": {
+      "people": "Betsimisaraka",
+      "language": "Malagasy",
+      "country": "Madagascar"
+    },
+    "info": "After a traumatic event forces him to leave the sapphire mines, Kwame returns to his hometown, where he reconnects with his mother and old friends. While there, he confronts the harsh realities of corruption and societal decay, forcing him to choose between the temptation of easy money and a tougher path toward political awakening and integrity.\nDir **LUCK RAZANAJAONA** seeks to depict the contemporary political cycles of his country, and takes an interest in engaging Madagascar in neighboring Pan-Africanism.",
+    "watch": [
+      ""
+    ],
+    "trailer": "https://youtu.be/EB4VECA1MdM",
+    "color": "#725449",
+    "location": {
+      "x": 49.4023,
+      "y": -18.1417,
+      "name": "Toamasina"
     }
   },
   {

@@ -14,6 +14,7 @@ struct MovieEntry: Identifiable, Codable, Hashable {
     let year: String
     let runtime: Int
     let genre: [String]
+    let tags: [String]
     let group: MovieGroupDetails
     let info: String
     let watch: [String]

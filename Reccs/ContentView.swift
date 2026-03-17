@@ -48,7 +48,7 @@ struct ContentView: View {
                 .tabItem { Text("Geoscheme") }
                 .tag(1)
             
-            SearchView()
+            SearchView(store: store)
                 .tabItem { Text("Search") }
                 .tag(2)
         }

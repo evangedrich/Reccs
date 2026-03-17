@@ -40,3 +40,14 @@ struct MongolianText: View {
         .padding(.bottom, columnWidth+10)
     }
 }
+
+
+
+extension String {
+    func substring(from: Int, to: Int) -> String? {
+        guard from >= 0 && to < self.count && from <= to else { return nil }
+        let start = self.index(self.startIndex, offsetBy: from)
+        let end = self.index(self.startIndex, offsetBy: to)
+        return String(self[start...end])
+    }
+}

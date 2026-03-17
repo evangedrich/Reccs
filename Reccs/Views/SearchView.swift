@@ -8,8 +8,55 @@
 import SwiftUI
 
 struct SearchView: View {
+    @State private var searchText = ""
+    let store: MovieStore
+    let columns = [
+        GridItem(.fixed(300), spacing: 50),
+        GridItem(.fixed(300), spacing: 50),
+        GridItem(.fixed(300), spacing: 50),
+        GridItem(.fixed(300), spacing: 50),
+        GridItem(.fixed(300), spacing: 50)
+    ];
     var body: some View {
-        Text("Search page content")
-            .font(.largeTitle)
+        NavigationStack {
+            ScrollView {
+                LazyVGrid(columns: columns, spacing: 50) {
+                    ForEach(filteredMovies) { movie in
+                        MovieCard(movie: movie)
+                    }
+                }
+                .padding(.top, 20)
+                .padding(.horizontal, 50)
+            }
+            .searchable(text: $searchText, prompt: "Search movies...")
+            .navigationDestination(for: MovieEntry.self) { movie in
+                MovieDetailView(movie: movie)
+            }
+        }
+    }
+    var filteredMovies: [MovieEntry] {
+        if searchText.isEmpty {
+            return store.films
+        } else {
+            return store.films.filter { movie in
+                let regionMatch = movie.regionLabel.localizedCaseInsensitiveContains(searchText) ||
+                    (movie.id.hasPrefix("OC") && "Oceania".localizedCaseInsensitiveContains(searchText) ) ||
+                    (movie.id.hasPrefix("AF") && "Africa".localizedCaseInsensitiveContains(searchText)) ||
+                    (movie.id.hasPrefix("AM") && "America".localizedCaseInsensitiveContains(searchText)) ||
+                    ((movie.id.hasPrefix("EU") || movie.id.hasPrefix("AS")) && "Eurasia".localizedCaseInsensitiveContains(searchText))
+                let titleMatch = movie.title.original.localizedCaseInsensitiveContains(searchText) ||
+                [movie.title.transliteration, movie.title.translation]
+                    .compactMap { $0 }
+                    .contains { $0.localizedCaseInsensitiveContains(searchText) }
+                let genreMatch = movie.genre.contains { $0.localizedCaseInsensitiveContains(searchText) }
+                let tagMatch = movie.tags.contains { $0.localizedCaseInsensitiveContains(searchText) }
+                let groupMatch = [movie.group.people, movie.group.language, movie.group.country, movie.group.location]
+                    .compactMap { $0 }
+                    .contains { $0.localizedCaseInsensitiveContains(searchText) }
+                let collectionType = movie.id.substring(from: 4, to: 6)
+                let collectionMatch = (collectionType == "CFF" && "Cultural Feature Films".localizedCaseInsensitiveContains(searchText)) || (collectionType == "GFF" && "Globalized Feature Films".localizedCaseInsensitiveContains(searchText))
+                return regionMatch || titleMatch || genreMatch || tagMatch || groupMatch || collectionMatch
+            }
+        }
     }
 }
