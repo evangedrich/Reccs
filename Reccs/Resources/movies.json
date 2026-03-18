@@ -1501,5 +1501,69 @@
       "y": -14.2710,
       "name": "Amerika Sāmoa"
     }
+  },
+  {
+    "id": "AMLOCSF",
+    "title": {
+      "original": "Imbé Gikegü",
+      "translation": "The Scent of Pequi Fruit"
+    },
+    "year": "2006",
+    "runtime": 36,
+    "genre": [
+      "Dramedy",
+      "Symbolist"
+    ],
+    "tags": [
+      ""
+    ],
+    "group": {
+      "people": "Kuikuro",
+      "language": "Kuikúro",
+      "location": "Mato Grosso, BR"
+    },
+    "info": "As the dry season comes to an end, so begins the festive time of year in the Alto Xingu. The smell of the damp earth is mixed with the sweet perfume of pequi, and Kuikuro filmmakers **TAKUMÃ KUIKURO** and **MARICÁ KUIKURO** give us a re-enactment of the story of the fruit.\nPequi, with its sexual and reproductive symbolic meanings, used to belong to the alligator, but a man named Marika killed him out of jealousy when he found out that his wives have been unfaithful to him, and the hummingbird is now in charge of the pequi. The video interweaves this story with the celebration of the Hugagu festival, which involves singing, dancing, and the making of wooden bird sculptures, as well as explanations of the importance of pequi.",
+    "watch": [
+      "https://vimeo.com/ondemand/cheirodepequi/220915396"
+    ],
+    "trailer": "https://youtu.be/GF49vlg9y5A",
+    "color": "#dba839",
+    "location": {
+      "x": -53.1333,
+      "y": -12.4333,
+      "name": "Ipatse Village"
+    }
+  },
+  {
+    "id": "AMSOCSF",
+    "title": {
+      "original": "Lafken ñi az",
+      "translation": "The Ocean Reveals Its Knowledge"
+    },
+    "year": "2016",
+    "runtime": 8,
+    "genre": [
+      "Docufiction",
+      "Children's"
+    ],
+    "tags": [
+      ""
+    ],
+    "group": {
+      "people": "Lafkenche Mapuche",
+      "language": "Mapudungun",
+      "country": "Chile"
+    },
+    "info": "The sea… its colours, its sounds, and its strength imbue the dialogue between two girls and their grandparents with its spirit and wisdom. The Mapuche Lafkenche, one of the major territorial divisions of the Mapuche people, observe the Lafkenmapu Az to enter its dynamics and maintain a balance with Lafkenmapu, the land of the sea.\nThe short film was made by the Mapuche School of Filmmaking and Communication of the Aylla Rewe Budi, which focuses on *tukulpa kimvn*, bringing knowledge to the present through reflecting on traditional values.",
+    "watch": [
+      "https://youtu.be/ZGI_KDOmOts"
+    ],
+    "trailer": "https://youtu.be/23FowJvS9W4",
+    "color": "#423327",
+    "location": {
+      "x": -73.0000,
+      "y": -38.0000,
+      "name": "Lafkenmapu Territory"
+    }
   }
 ]
