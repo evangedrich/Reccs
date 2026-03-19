@@ -6,12 +6,15 @@
 //
 
 import SwiftUI
+import YouTubeKit
+import AVFoundation
 
 struct MovieDetailView: View {
     let movie: MovieEntry
     @State private var showInstallAlert = false
     @State private var showFullInfo = false
-    @State private var isPlayingTrailer = false
+    @State private var preloadState = TrailerPreloadState() // Shared observable state
+    @State private var trailerToPlay: TrailerData?
     @State private var showProviderList = false
     @State private var failedServiceName = ""
     @Namespace private var detailNamespace
@@ -123,7 +126,11 @@ struct MovieDetailView: View {
                         }
 
                         Button(action: {
-                            isPlayingTrailer = true
+                            print("🎬 [DEBUG] Opening trailer - preloadedItem: \(preloadState.preloadedTrailerItem != nil), asset: \(preloadState.preloadingAsset != nil), task running: \(preloadState.preloadTask != nil && !(preloadState.preloadTask?.isCancelled ?? true))")
+                            trailerToPlay = TrailerData(
+                                videoURL: movie.trailer,
+                                preloadState: preloadState
+                            )
                         }) {
                             HStack(spacing: 12) {
                                 Image(systemName: "play.rectangle.fill")
@@ -132,9 +139,6 @@ struct MovieDetailView: View {
                         }
                         .focused($focusedElement, equals: .trailer)
                         .prefersDefaultFocus(movie.watch.first?.isEmpty ?? true, in: detailNamespace)
-                        .fullScreenCover(isPresented: $isPlayingTrailer) {
-                            TrailerPlayerView(videoURL: movie.trailer)
-                        }
                         .contextMenu {
                             Button("Open in YouTube App") {
                                 if let url = URL(string: movie.trailer) {
@@ -188,6 +192,20 @@ struct MovieDetailView: View {
                     .cornerRadius(20)
             }
         }
+        .task {
+            preloadState.preloadTask = Task {
+                await preloadTrailer()
+            }
+        }
+        .onDisappear {
+            preloadState.preloadTask?.cancel()
+        }
+        .fullScreenCover(item: $trailerToPlay) { trailerData in
+            TrailerPlayerView(
+                videoURL: trailerData.videoURL,
+                preloadState: trailerData.preloadState
+            )
+        }
         .alert("\(failedServiceName) Not Installed", isPresented: $showInstallAlert) {
             Button("OK", role: .cancel) { }
         } message: {
@@ -203,6 +221,104 @@ struct MovieDetailView: View {
         .toolbar(.hidden, for: .tabBar)
         .ignoresSafeArea(.container, edges: .top)
     }
+    
+    func preloadTrailer() async {
+        // 1. Small anti-scroll delay: Don't waste data if they are just passing through quickly
+        try? await Task.sleep(nanoseconds: 100_000_000) // 100ms instead of 200ms
+        
+        guard let url = URL(string: movie.trailer) else { return }
+        
+        do {
+            // 2. Extract streams (Remote API is faster and more reliable)
+            let youtube = YouTube(url: url, methods: [.remote, .local])
+            let streams = try await youtube.streams
+            
+            // 3. Try to get the highest quality by combining separate video + audio
+            let bestVideo = streams.filter { stream in
+                let codecString = stream.videoCodec.map { "\($0)".lowercased() } ?? ""
+                return stream.audioCodec == nil && codecString.contains("avc1")
+            }.highestResolutionStream()
+            
+            let bestAudio = streams.filter {
+                $0.videoCodec == nil && $0.audioCodec != nil
+            }.highestResolutionStream()
+            
+            if let vURL = bestVideo?.url, let aURL = bestAudio?.url {
+                // HIGH QUALITY PATH: Separate video + audio streams (1080p capable)
+                print("🎥 [PRELOAD] Using high-quality separate streams")
+                
+                let videoAsset = AVURLAsset(url: vURL)
+                let audioAsset = AVURLAsset(url: aURL)
+                
+                // Store assets immediately so they start downloading
+                await MainActor.run {
+                    self.preloadState.preloadingVideoAsset = videoAsset
+                    self.preloadState.preloadingAudioAsset = audioAsset
+                    print("✅ [PRELOAD STARTED] Trailer assets for \(movie.title.original) are downloading...")
+                }
+                
+                // Create composition and try to insert tracks
+                let composition = AVMutableComposition()
+                let compV = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
+                let compA = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
+                
+                do {
+                    // Load tracks and duration in parallel
+                    async let vTracks = videoAsset.load(.tracks)
+                    async let aTracks = audioAsset.load(.tracks)
+                    async let duration = videoAsset.load(.duration)
+                    
+                    if let vTrack = try await vTracks.first,
+                       let aTrack = try await aTracks.first {
+                        let timeRange = CMTimeRange(start: .zero, duration: try await duration)
+                        try compV?.insertTimeRange(timeRange, of: vTrack, at: .zero)
+                        try compA?.insertTimeRange(timeRange, of: aTrack, at: .zero)
+                        
+                        let item = AVPlayerItem(asset: composition)
+                        item.preferredForwardBufferDuration = 1.0
+                        
+                        // Only set preloadingAsset AFTER tracks are successfully inserted
+                        await MainActor.run {
+                            self.preloadState.preloadingAsset = composition
+                            self.preloadState.preloadedTrailerItem = item
+                            print("✅ [PRELOAD READY] High-quality composition ready for \(movie.title.original)")
+                        }
+                    }
+                } catch {
+                    print("⚠️ [PRELOAD] Track insertion failed: \(error). Assets still available for playback.")
+                }
+            } else if let stream = streams.filter({ $0.isProgressive }).highestResolutionStream() {
+                // FALLBACK: Progressive stream (typically 720p max)
+                print("📹 [PRELOAD] Using progressive stream fallback")
+                let asset = AVURLAsset(url: stream.url)
+                let item = AVPlayerItem(asset: asset)
+                item.preferredForwardBufferDuration = 1.0
+                
+                await MainActor.run {
+                    self.preloadState.preloadingAsset = asset
+                    self.preloadState.preloadedTrailerItem = item
+                    print("✅ [PRELOAD READY] Trailer for \(movie.title.original) is buffered and ready for instant play.")
+                }
+            }
+        } catch {
+            print("Preload failed: \(error)")
+        }
+    }
+}
+
+struct TrailerData: Identifiable {
+    let id = UUID()
+    let videoURL: String
+    let preloadState: TrailerPreloadState // Pass the shared state
+}
+
+@Observable
+class TrailerPreloadState {
+    var preloadingAsset: AVAsset?
+    var preloadingVideoAsset: AVURLAsset?
+    var preloadingAudioAsset: AVURLAsset?
+    var preloadedTrailerItem: AVPlayerItem?
+    var preloadTask: Task<Void, Never>?
 }
 
 enum FocusElement {
@@ -232,3 +348,4 @@ struct TransparentFocusView: View {
             .animation(.easeOut(duration: 0.2), value: isFocused)
     }
 }
+

@@ -9,6 +9,7 @@ import SwiftUI
 
 struct SearchView: View {
     @State private var searchText = ""
+    @FocusState private var focusedMovieID: String?
     let store: MovieStore
     let columns = [
         GridItem(.fixed(300), spacing: 50),
@@ -28,11 +29,16 @@ struct SearchView: View {
                 LazyVGrid(columns: searchText.isEmpty ? columns2 : columns, spacing: 50) {
                     if searchText.isEmpty {
                         ForEach(collections) { collection in
-                            CollectionCard(collection: collection, searchText: $searchText)
+                            CollectionCard(collection: collection, searchText: $searchText) {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    focusedMovieID = filteredMovies.first?.id
+                                }
+                            }
                         }
                     } else {
                         ForEach(filteredMovies) { movie in
                             MovieCard(movie: movie)
+                                .focused($focusedMovieID, equals: movie.id)
                         }
                     }
                 }
@@ -43,12 +49,15 @@ struct SearchView: View {
             .navigationDestination(for: MovieEntry.self) { movie in
                 MovieDetailView(movie: movie)
             }
+            .onDisappear {
+                searchText = ""
+            }
         }
     }
     var filteredMovies: [MovieEntry] {
         guard !searchText.isEmpty else { return [] }
             
-        return store.films.filter { movie in
+        let results = store.films.filter { movie in
             let regionMatch = movie.regionLabel.localizedCaseInsensitiveContains(searchText) ||
             (movie.id.hasPrefix("OC") && "Oceania".localizedCaseInsensitiveContains(searchText) ) ||
             (movie.id.hasPrefix("AF") && "Africa".localizedCaseInsensitiveContains(searchText)) ||
@@ -69,5 +78,6 @@ struct SearchView: View {
                 (whichCollection == "CSF" && "Cultural Short Films".localizedCaseInsensitiveContains(searchText))
             return regionMatch || titleMatch || genreMatch || tagMatch || groupMatch || collectionMatch
         }
+        return results
     }
 }

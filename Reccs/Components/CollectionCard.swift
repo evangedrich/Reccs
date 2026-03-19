@@ -10,6 +10,7 @@ import SwiftUI
 struct CollectionCard: View {
     let collection: CollectionType
     @Binding var searchText: String
+    var onHit: () -> Void
     var body: some View {
         let titleParts = collection.title.split(separator: " ", maxSplits: 1).map(String.init)
         let title1 = titleParts.first ?? ""
@@ -17,6 +18,7 @@ struct CollectionCard: View {
         Button(action: {
             withAnimation(.easeInOut) {
                 searchText = collection.title
+                onHit()
             }
         }) {
             ZStack {
