@@ -18,7 +18,12 @@ struct TrailerPlayerView: View {
     
     @State private var isBuffering = true
     @State private var showLongLoadingMessage = false
-    @State private var cancellables = Set<AnyCancellable>()
+    @State private var hasReachedEnd = false // Prevent multiple dismiss calls
+    @State private var observerStoppedCheckTimer: Timer?
+    @State private var lastKnownTime: Double = 0
+    @State private var timeStuckCount: Int = 0
+    @State private var videoStartedPlaying = false // Track if video has started
+    @State private var stallCount: Int = 0 // Track how many times we've stalled
 
     var body: some View {
         ZStack {
@@ -116,18 +121,13 @@ struct TrailerPlayerView: View {
                 startLoadingTimer()
             }
             
-            // 2. Observer to dismiss the view when the video ends
-            NotificationCenter.default.addObserver(
-                forName: .AVPlayerItemDidPlayToEndTime,
-                object: nil,
-                queue: .main
-            ) { _ in
-                dismiss()
-            }
+            // Set up end-of-video detection
+            setupEndDetection()
         }
         .onDisappear {
-            // Clean up: stop the player and remove the observer
+            // Clean up: stop the player and remove observers
             player.pause()
+            observerStoppedCheckTimer?.invalidate()
             NotificationCenter.default.removeObserver(self)
         }
         // Detect when video starts to hide the message
@@ -135,6 +135,35 @@ struct TrailerPlayerView: View {
             if status == .playing {
                 withAnimation(.easeInOut(duration: 0.5)) {
                     isBuffering = false
+                }
+                videoStartedPlaying = true
+            }
+        }
+        // Additional monitoring: detect when playback pauses after it started
+        .onReceive(player.publisher(for: \.rate)) { rate in
+            // If video was playing and now stopped (rate = 0), check if it's the end
+            if videoStartedPlaying && rate == 0 && !hasReachedEnd {
+                print("🛑 [RATE] Player stopped (rate=0) after playing")
+                
+                // Give it a moment - could be buffering
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    guard !hasReachedEnd, 
+                          player.rate == 0, // Still stopped
+                          player.timeControlStatus == .paused, // Actually paused, not buffering
+                          let currentItem = player.currentItem else { return }
+                    
+                    let currentTime = currentItem.currentTime().seconds
+                    let duration = currentItem.duration.seconds
+                    
+                    print("🛑 [RATE CHECK] Still stopped - Time: \(currentTime)s/\(duration)s, Status: \(player.timeControlStatus.rawValue)")
+                    
+                    // If we're anywhere past the halfway point and player genuinely stopped, assume it's done
+                    // (The composition bug means currentTime is unreliable, but the rate stopping IS reliable)
+                    if currentTime > duration * 0.5 && duration.isFinite && duration > 10 {
+                        hasReachedEnd = true
+                        print("🏁 [END] Video ended via rate=0 detection (stopped after playing)")
+                        dismiss()
+                    }
                 }
             }
         }
@@ -153,10 +182,9 @@ struct TrailerPlayerView: View {
     
     func createCompositionAndPlay(videoAsset: AVURLAsset, audioAsset: AVURLAsset) async {
         do {
-            // Load tracks and duration in parallel
+            // Load tracks
             async let vTracks = videoAsset.load(.tracks)
             async let aTracks = audioAsset.load(.tracks)
-            async let duration = videoAsset.load(.duration)
             
             let composition = AVMutableComposition()
             let compV = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
@@ -164,11 +192,27 @@ struct TrailerPlayerView: View {
             
             // Wait for tracks to be ready
             if let vTrack = try await vTracks.first, let aTrack = try await aTracks.first {
-                let timeRange = CMTimeRange(start: .zero, duration: try await duration)
+                // Load both time ranges to compare
+                let vTrackTimeRange = try await vTrack.load(.timeRange)
+                let aTrackTimeRange = try await aTrack.load(.timeRange)
+                
+                let vDuration = CMTimeGetSeconds(vTrackTimeRange.duration)
+                let aDuration = CMTimeGetSeconds(aTrackTimeRange.duration)
+                
+                print("📊 [PLAYER] Video track: \(vDuration)s, Audio track: \(aDuration)s")
+                
+                // YouTube bug: Streams report double the actual duration
+                // Use half the duration for compositions to avoid playing duplicated content
+                let safeDuration = min(vDuration, aDuration) / 2.0
+                
+                print("✅ [PLAYER] Using half duration (\(safeDuration)s) to avoid YouTube duplicate bug")
+                
+                let timeRange = CMTimeRange(start: .zero, duration: CMTime(seconds: safeDuration, preferredTimescale: 600))
+                
                 try compV?.insertTimeRange(timeRange, of: vTrack, at: .zero)
                 try compA?.insertTimeRange(timeRange, of: aTrack, at: .zero)
                 
-                print("✅ [PLAYER] Composition tracks inserted successfully")
+                print("✅ [PLAYER] Composition tracks inserted with duration: \(safeDuration)s")
                 
                 let playerItem = AVPlayerItem(asset: composition)
                 playerItem.preferredForwardBufferDuration = 1.0
@@ -217,10 +261,9 @@ struct TrailerPlayerView: View {
                 let videoAsset = AVURLAsset(url: vURL)
                 let audioAsset = AVURLAsset(url: aURL)
                 
-                // Start loading tracks and duration in parallel
+                // Start loading tracks
                 async let vTracks = videoAsset.load(.tracks)
                 async let aTracks = audioAsset.load(.tracks)
-                async let duration = videoAsset.load(.duration)
                 
                 let composition = AVMutableComposition()
                 let compV = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
@@ -228,9 +271,27 @@ struct TrailerPlayerView: View {
                 
                 // Wait for parallel loads to finish
                 if let vTrack = try await vTracks.first, let aTrack = try await aTracks.first {
-                    let timeRange = CMTimeRange(start: .zero, duration: try await duration)
+                    // Load both time ranges to compare
+                    let vTrackTimeRange = try await vTrack.load(.timeRange)
+                    let aTrackTimeRange = try await aTrack.load(.timeRange)
+                    
+                    let vDuration = CMTimeGetSeconds(vTrackTimeRange.duration)
+                    let aDuration = CMTimeGetSeconds(aTrackTimeRange.duration)
+                    
+                    print("📊 [PLAYER] Fresh load - Video track: \(vDuration)s, Audio track: \(aDuration)s")
+                    
+                    // YouTube bug: Streams report double the actual duration
+                    // Use half the duration for compositions to avoid playing duplicated content
+                    let safeDuration = min(vDuration, aDuration) / 2.0
+                    
+                    print("✅ [PLAYER] Using half duration (\(safeDuration)s) to avoid YouTube duplicate bug")
+                    
+                    let timeRange = CMTimeRange(start: .zero, duration: CMTime(seconds: safeDuration, preferredTimescale: 600))
+                    
                     try compV?.insertTimeRange(timeRange, of: vTrack, at: .zero)
                     try compA?.insertTimeRange(timeRange, of: aTrack, at: .zero)
+                    
+                    print("✅ [PLAYER] Fresh composition created with duration: \(safeDuration)s")
                     
                     let playerItem = AVPlayerItem(asset: composition)
                     
@@ -257,6 +318,111 @@ struct TrailerPlayerView: View {
             
             // This command is more aggressive than .play()
             self.player.playImmediately(atRate: 1.0)
+        }
+    }
+    
+    private func setupEndDetection() {
+        // METHOD 1: Traditional notification (most reliable for normal playback)
+        NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemDidPlayToEndTime,
+            object: nil,
+            queue: .main
+        ) { [self] _ in
+            guard !hasReachedEnd else { return }
+            hasReachedEnd = true
+            print("🏁 [END] Video ended via notification")
+            dismiss()
+        }
+        
+        // METHOD 2: Aggressive polling with stall detection
+        observerStoppedCheckTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { [self] _ in
+            guard !hasReachedEnd, let currentItem = player.currentItem else { return }
+            
+            let currentTime = currentItem.currentTime().seconds
+            let duration = currentItem.duration.seconds
+            let rate = player.rate
+            let status = player.timeControlStatus
+            
+            // Only check if we have valid duration
+            guard duration.isFinite, duration > 0 else { return }
+            
+            // Log periodically to see what's happening
+            if Int(currentTime) % 10 == 0 && currentTime > 0 {
+                print("⏱️ [POLL] Time: \(currentTime)s/\(duration)s, Rate: \(rate), Status: \(status.rawValue)")
+            }
+            
+            // DETECTION 1: Near the end based on reported time
+            if currentTime >= duration - 0.5 {
+                hasReachedEnd = true
+                print("🏁 [END] Video ended via polling - current: \(currentTime)s, duration: \(duration)s")
+                dismiss()
+                return
+            }
+            
+            // DETECTION 2: Stalling detection (network stream exhausted)
+            // When the stream runs out of data (actual video ended), player stalls
+            if status == .waitingToPlayAtSpecifiedRate && videoStartedPlaying && rate > 0 {
+                stallCount += 1
+                print("⚠️ [STALL] Player stalled (\(stallCount) x 0.3s) at \(currentTime)s - waiting for data that may not exist")
+                
+                // If stalled for 3+ seconds (10 checks) while supposedly "playing"
+                // This indicates the stream has no more data (it ended)
+                if stallCount >= 10 {
+                    hasReachedEnd = true
+                    print("🏁 [END] Video ended via stall detection (stream exhausted at \(currentTime)s of claimed \(duration)s)")
+                    dismiss()
+                    return
+                }
+            } else if status == .playing {
+                // Reset stall counter when playing resumes
+                stallCount = 0
+            }
+            
+            // DETECTION 3: YouTube duplicate bug - Time frozen at exactly half duration
+            // This happens when YouTube serves the video twice but playback stops after the first copy
+            let halfDuration = duration / 2.0
+            if abs(currentTime - halfDuration) < 2.0 {  // Within 2 seconds of halfway point
+                // Check if time is frozen
+                if abs(currentTime - lastKnownTime) < 0.05 {
+                    timeStuckCount += 1
+                    
+                    // If stuck at the halfway mark for 2 seconds while "playing"
+                    if timeStuckCount >= 6 && rate > 0 {
+                        hasReachedEnd = true
+                        print("🏁 [END] Video ended via YouTube duplicate detection (frozen at \(currentTime)s = half of \(duration)s)")
+                        dismiss()
+                        return
+                    }
+                }
+            } else {
+                // Not at halfway point, check for general freezing
+                if abs(currentTime - lastKnownTime) < 0.05 {
+                    if rate > 0 && status == .playing {
+                        timeStuckCount += 1
+                        
+                        // If stuck for 3+ seconds anywhere while "playing" and past 10s mark
+                        if timeStuckCount >= 10 && currentTime > 10 {
+                            print("⚠️ [FROZEN] Time frozen at \(currentTime)s for \(Double(timeStuckCount * 3) / 10.0)s while rate=\(rate)")
+                            hasReachedEnd = true
+                            print("🏁 [END] Video ended via frozen time detection")
+                            dismiss()
+                            return
+                        }
+                    }
+                } else {
+                    // Time is moving, reset counter
+                    timeStuckCount = 0
+                }
+            }
+            
+            lastKnownTime = currentTime
+            
+            // DETECTION 4: Player stopped near the end
+            if rate == 0 && currentTime >= duration - 2.0 && status != .waitingToPlayAtSpecifiedRate {
+                hasReachedEnd = true
+                print("🏁 [END] Video ended via polling (stopped near end) - current: \(currentTime)s, duration: \(duration)s")
+                dismiss()
+            }
         }
     }
 }

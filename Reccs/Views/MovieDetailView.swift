@@ -263,16 +263,33 @@ struct MovieDetailView: View {
                 let compA = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
                 
                 do {
-                    // Load tracks and duration in parallel
+                    // Load tracks first
                     async let vTracks = videoAsset.load(.tracks)
                     async let aTracks = audioAsset.load(.tracks)
-                    async let duration = videoAsset.load(.duration)
                     
                     if let vTrack = try await vTracks.first,
                        let aTrack = try await aTracks.first {
-                        let timeRange = CMTimeRange(start: .zero, duration: try await duration)
+                        // Load both time ranges to compare
+                        let vTrackTimeRange = try await vTrack.load(.timeRange)
+                        let aTrackTimeRange = try await aTrack.load(.timeRange)
+                        
+                        let vDuration = CMTimeGetSeconds(vTrackTimeRange.duration)
+                        let aDuration = CMTimeGetSeconds(aTrackTimeRange.duration)
+                        
+                        print("📊 [PRELOAD] Video track: \(vDuration)s, Audio track: \(aDuration)s")
+                        
+                        // YouTube bug: Streams report double the actual duration
+                        // Use half the duration for compositions to avoid playing duplicated content
+                        let safeDuration = min(vDuration, aDuration) / 2.0
+                        
+                        print("✅ [PRELOAD] Using half duration (\(safeDuration)s) to avoid YouTube duplicate bug")
+                        
+                        let timeRange = CMTimeRange(start: .zero, duration: CMTime(seconds: safeDuration, preferredTimescale: 600))
+                        
                         try compV?.insertTimeRange(timeRange, of: vTrack, at: .zero)
                         try compA?.insertTimeRange(timeRange, of: aTrack, at: .zero)
+                        
+                        print("✅ [PRELOAD] Composition created with duration: \(safeDuration)s")
                         
                         let item = AVPlayerItem(asset: composition)
                         item.preferredForwardBufferDuration = 1.0
