@@ -8,7 +8,6 @@
 import SwiftUI
 import AVKit
 import YouTubeKit
-import Combine
 
 struct TrailerPlayerView: View {
     let videoURL: String
@@ -18,12 +17,8 @@ struct TrailerPlayerView: View {
     
     @State private var isBuffering = true
     @State private var showLongLoadingMessage = false
-    @State private var hasReachedEnd = false // Prevent multiple dismiss calls
+    @State private var hasReachedEnd = false
     @State private var observerStoppedCheckTimer: Timer?
-    @State private var lastKnownTime: Double = 0
-    @State private var timeStuckCount: Int = 0
-    @State private var videoStartedPlaying = false // Track if video has started
-    @State private var stallCount: Int = 0 // Track how many times we've stalled
 
     var body: some View {
         ZStack {
@@ -125,45 +120,14 @@ struct TrailerPlayerView: View {
             setupEndDetection()
         }
         .onDisappear {
-            // Clean up: stop the player and remove observers
             player.pause()
             observerStoppedCheckTimer?.invalidate()
             NotificationCenter.default.removeObserver(self)
         }
-        // Detect when video starts to hide the message
         .onReceive(player.publisher(for: \.timeControlStatus)) { status in
             if status == .playing {
                 withAnimation(.easeInOut(duration: 0.5)) {
                     isBuffering = false
-                }
-                videoStartedPlaying = true
-            }
-        }
-        // Additional monitoring: detect when playback pauses after it started
-        .onReceive(player.publisher(for: \.rate)) { rate in
-            // If video was playing and now stopped (rate = 0), check if it's the end
-            if videoStartedPlaying && rate == 0 && !hasReachedEnd {
-                print("🛑 [RATE] Player stopped (rate=0) after playing")
-                
-                // Give it a moment - could be buffering
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    guard !hasReachedEnd, 
-                          player.rate == 0, // Still stopped
-                          player.timeControlStatus == .paused, // Actually paused, not buffering
-                          let currentItem = player.currentItem else { return }
-                    
-                    let currentTime = currentItem.currentTime().seconds
-                    let duration = currentItem.duration.seconds
-                    
-                    print("🛑 [RATE CHECK] Still stopped - Time: \(currentTime)s/\(duration)s, Status: \(player.timeControlStatus.rawValue)")
-                    
-                    // If we're anywhere past the halfway point and player genuinely stopped, assume it's done
-                    // (The composition bug means currentTime is unreliable, but the rate stopping IS reliable)
-                    if currentTime > duration * 0.5 && duration.isFinite && duration > 10 {
-                        hasReachedEnd = true
-                        print("🏁 [END] Video ended via rate=0 detection (stopped after playing)")
-                        dismiss()
-                    }
                 }
             }
         }
@@ -202,7 +166,6 @@ struct TrailerPlayerView: View {
                 print("📊 [PLAYER] Video track: \(vDuration)s, Audio track: \(aDuration)s")
                 
                 // YouTube bug: Streams report double the actual duration
-                // Use half the duration for compositions to avoid playing duplicated content
                 let safeDuration = min(vDuration, aDuration) / 2.0
                 
                 print("✅ [PLAYER] Using half duration (\(safeDuration)s) to avoid YouTube duplicate bug")
@@ -281,7 +244,6 @@ struct TrailerPlayerView: View {
                     print("📊 [PLAYER] Fresh load - Video track: \(vDuration)s, Audio track: \(aDuration)s")
                     
                     // YouTube bug: Streams report double the actual duration
-                    // Use half the duration for compositions to avoid playing duplicated content
                     let safeDuration = min(vDuration, aDuration) / 2.0
                     
                     print("✅ [PLAYER] Using half duration (\(safeDuration)s) to avoid YouTube duplicate bug")
@@ -322,7 +284,7 @@ struct TrailerPlayerView: View {
     }
     
     private func setupEndDetection() {
-        // METHOD 1: Traditional notification (most reliable for normal playback)
+        // Primary: Traditional notification (works reliably now that duration is correct)
         NotificationCenter.default.addObserver(
             forName: .AVPlayerItemDidPlayToEndTime,
             object: nil,
@@ -334,93 +296,19 @@ struct TrailerPlayerView: View {
             dismiss()
         }
         
-        // METHOD 2: Aggressive polling with stall detection
-        observerStoppedCheckTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { [self] _ in
+        // Fallback: Polling to catch edge cases
+        observerStoppedCheckTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [self] _ in
             guard !hasReachedEnd, let currentItem = player.currentItem else { return }
             
             let currentTime = currentItem.currentTime().seconds
             let duration = currentItem.duration.seconds
-            let rate = player.rate
-            let status = player.timeControlStatus
             
-            // Only check if we have valid duration
             guard duration.isFinite, duration > 0 else { return }
             
-            // Log periodically to see what's happening
-            if Int(currentTime) % 10 == 0 && currentTime > 0 {
-                print("⏱️ [POLL] Time: \(currentTime)s/\(duration)s, Rate: \(rate), Status: \(status.rawValue)")
-            }
-            
-            // DETECTION 1: Near the end based on reported time
+            // Simple end detection
             if currentTime >= duration - 0.5 {
                 hasReachedEnd = true
-                print("🏁 [END] Video ended via polling - current: \(currentTime)s, duration: \(duration)s")
-                dismiss()
-                return
-            }
-            
-            // DETECTION 2: Stalling detection (network stream exhausted)
-            // When the stream runs out of data (actual video ended), player stalls
-            if status == .waitingToPlayAtSpecifiedRate && videoStartedPlaying && rate > 0 {
-                stallCount += 1
-                print("⚠️ [STALL] Player stalled (\(stallCount) x 0.3s) at \(currentTime)s - waiting for data that may not exist")
-                
-                // If stalled for 3+ seconds (10 checks) while supposedly "playing"
-                // This indicates the stream has no more data (it ended)
-                if stallCount >= 10 {
-                    hasReachedEnd = true
-                    print("🏁 [END] Video ended via stall detection (stream exhausted at \(currentTime)s of claimed \(duration)s)")
-                    dismiss()
-                    return
-                }
-            } else if status == .playing {
-                // Reset stall counter when playing resumes
-                stallCount = 0
-            }
-            
-            // DETECTION 3: YouTube duplicate bug - Time frozen at exactly half duration
-            // This happens when YouTube serves the video twice but playback stops after the first copy
-            let halfDuration = duration / 2.0
-            if abs(currentTime - halfDuration) < 2.0 {  // Within 2 seconds of halfway point
-                // Check if time is frozen
-                if abs(currentTime - lastKnownTime) < 0.05 {
-                    timeStuckCount += 1
-                    
-                    // If stuck at the halfway mark for 2 seconds while "playing"
-                    if timeStuckCount >= 6 && rate > 0 {
-                        hasReachedEnd = true
-                        print("🏁 [END] Video ended via YouTube duplicate detection (frozen at \(currentTime)s = half of \(duration)s)")
-                        dismiss()
-                        return
-                    }
-                }
-            } else {
-                // Not at halfway point, check for general freezing
-                if abs(currentTime - lastKnownTime) < 0.05 {
-                    if rate > 0 && status == .playing {
-                        timeStuckCount += 1
-                        
-                        // If stuck for 3+ seconds anywhere while "playing" and past 10s mark
-                        if timeStuckCount >= 10 && currentTime > 10 {
-                            print("⚠️ [FROZEN] Time frozen at \(currentTime)s for \(Double(timeStuckCount * 3) / 10.0)s while rate=\(rate)")
-                            hasReachedEnd = true
-                            print("🏁 [END] Video ended via frozen time detection")
-                            dismiss()
-                            return
-                        }
-                    }
-                } else {
-                    // Time is moving, reset counter
-                    timeStuckCount = 0
-                }
-            }
-            
-            lastKnownTime = currentTime
-            
-            // DETECTION 4: Player stopped near the end
-            if rate == 0 && currentTime >= duration - 2.0 && status != .waitingToPlayAtSpecifiedRate {
-                hasReachedEnd = true
-                print("🏁 [END] Video ended via polling (stopped near end) - current: \(currentTime)s, duration: \(duration)s")
+                print("🏁 [END] Video ended via polling")
                 dismiss()
             }
         }
