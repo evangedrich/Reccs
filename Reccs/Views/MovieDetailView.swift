@@ -206,10 +206,19 @@ struct MovieDetailView: View {
                 preloadState: trailerData.preloadState
             )
         }
-        .alert("\(failedServiceName) Not Installed", isPresented: $showInstallAlert) {
+        .alert(
+            ["Kanopy","Klassiki","Mubi","Hoopla","Fawesome","Criterion"].contains(failedServiceName)
+            ? "Cannot connect to \(failedServiceName)"
+            : "\(failedServiceName) Not Installed",
+            isPresented: $showInstallAlert
+        ) {
             Button("OK", role: .cancel) { }
         } message: {
-            Text("Please install the \(failedServiceName) app from the App Store to watch this film\(movie.watch.count>1 ? " or check other providers":"").")
+            Text(
+                ["Kanopy","Klassiki","Mubi","Hoopla","Fawesome","Criterion"].contains(failedServiceName)
+                ? "Please install the \(failedServiceName) app, or if already installed, go to the app directly and search for this title."
+                : "Please install the \(failedServiceName) app from the App Store to watch this film\(movie.watch.count>1 ? " or check other providers":"")."
+            )
         }
         .onAppear {
             if let firstLink = movie.watch.first, !firstLink.isEmpty {
