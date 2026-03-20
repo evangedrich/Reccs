@@ -64,10 +64,10 @@ struct ProviderListView: View {
             }
         }
         .frame(width: 750, height: 550)
-        .background(.ultraThinMaterial)
-        .overlay(
-            RoundedRectangle(cornerRadius: 40)
-                .stroke(.white.opacity(0.2), lineWidth: 1)
-        )
+//        .background(.ultraThinMaterial)
+//        .overlay(
+//            RoundedRectangle(cornerRadius: 40)
+//                .stroke(.white.opacity(0.2), lineWidth: 1)
+//        )
     }
 }
