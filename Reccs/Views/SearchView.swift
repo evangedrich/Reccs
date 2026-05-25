@@ -14,9 +14,12 @@ struct SearchView: View {
     let columns = [
         GridItem(.fixed(300), spacing: 50),
         GridItem(.fixed(300), spacing: 50),
+        GridItem(.fixed(300), spacing: 50),
+        GridItem(.fixed(300), spacing: 50),
         GridItem(.fixed(300), spacing: 50)
     ];
     let columns2 = [
+        GridItem(.fixed(480), spacing: 50),
         GridItem(.fixed(480), spacing: 50),
         GridItem(.fixed(480), spacing: 50)
     ];

@@ -22,10 +22,18 @@ struct MovieShelfView: View {
                 .padding(.leading, 80)
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 50) {
-                    ForEach(filteredMovies) { movie in
-                        MovieCard(movie: movie)
-                            .id(movie.id)
-                            .focused($focusedID, equals: movie.id)
+                    if store.isLoading && filteredMovies.isEmpty {
+                        // Show loading skeletons
+                        ForEach(0..<5, id: \.self) { index in
+                            MovieCardSkeleton()
+                        }
+                    } else {
+                        // Show actual movies
+                        ForEach(filteredMovies) { movie in
+                            MovieCard(movie: movie)
+                                .id(movie.id)
+                                .focused($focusedID, equals: movie.id)
+                        }
                     }
                     Spacer()
                         .frame(width: 1500)
