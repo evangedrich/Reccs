@@ -10,10 +10,12 @@ import SwiftUI
 struct R2ImageView: View {
     let url: URL?
     let fallbackImageName: String?
+    let contentMode: ContentMode
     
-    init(url: URL?, fallbackImageName: String? = nil) {
+    init(url: URL?, fallbackImageName: String? = nil, contentMode: ContentMode = .fill) {
         self.url = url
         self.fallbackImageName = fallbackImageName
+        self.contentMode = contentMode
     }
     
     var body: some View {
@@ -26,7 +28,7 @@ struct R2ImageView: View {
                     case .success(let image):
                         image
                             .resizable()
-                            .aspectRatio(contentMode: .fill)
+                            .aspectRatio(contentMode: contentMode)
                     case .failure:
                         fallbackContent
                     @unknown default:
@@ -44,7 +46,7 @@ struct R2ImageView: View {
         if let fallbackImageName = fallbackImageName {
             Image(fallbackImageName)
                 .resizable()
-                .aspectRatio(contentMode: .fill)
+                .aspectRatio(contentMode: contentMode)
         } else {
             Color.gray.opacity(0.3)
                 .overlay {
@@ -58,7 +60,8 @@ struct R2ImageView: View {
 #Preview {
     R2ImageView(
         url: URL(string: "https://example.com/image.jpg"),
-        fallbackImageName: "placeholder"
+        fallbackImageName: "placeholder",
+        contentMode: .fit
     )
     .frame(width: 200, height: 300)
     .clipShape(RoundedRectangle(cornerRadius: 12))

@@ -199,7 +199,8 @@ struct MovieDetailView: View {
                 // Use R2ImageView with fallback to local asset
                 R2ImageView(
                     url: movieStore.getPosterURL(for: movie),
-                    fallbackImageName: movie.id
+                    fallbackImageName: movie.id,
+                    contentMode: .fit
                 )
                 .frame(width: 450)
                 .cornerRadius(20)
