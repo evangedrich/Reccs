@@ -46,8 +46,8 @@ struct GeoschemeView: View {
                         focusSubregion(id: "AMIN", x: 330, y: 240)
                         focusSubregion(id: "AMCE", x: 380, y: 400)
                         focusSubregion(id: "AMCR", x: 450, y: 380)
-                        focusSubregion(id: "AMHI", x: 430, y: 500)
-                        focusSubregion(id: "AMLO", x: 520, y: 480)
+                        focusSubregion(id: "AMWE", x: 430, y: 500)
+                        focusSubregion(id: "AMNE", x: 520, y: 480)
                         focusSubregion(id: "AMSO", x: 480, y: 620)
                     }
 
@@ -87,7 +87,7 @@ struct GeoschemeView: View {
                 if newValue == "PORTAL_WEST" {
                     focusedSubregion = "OCPL"
                 } else if newValue == "PORTAL_EAST" {
-                    focusedSubregion = "AMHI"
+                    focusedSubregion = "AMWE"
                 }
             }
         }
@@ -122,8 +122,8 @@ struct GeoschemeView: View {
         case "AMIN": MapPaths.AMIN()
         case "AMCE": MapPaths.AMCE()
         case "AMCR": MapPaths.AMCR()
-        case "AMHI": MapPaths.AMHI()
-        case "AMLO": MapPaths.AMLO()
+        case "AMWE": MapPaths.AMWE()
+        case "AMNE": MapPaths.AMNE()
         case "AMSO": MapPaths.AMSO()
         case "ASNO": MapPaths.ASNO()
         case "ASEA": MapPaths.ASEA()

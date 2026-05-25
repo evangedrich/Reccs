@@ -11,6 +11,7 @@ import AVFoundation
 
 struct MovieDetailView: View {
     let movie: MovieEntry
+    @Environment(MovieStore.self) private var movieStore
     @State private var showInstallAlert = false
     @State private var showFullInfo = false
     @State private var preloadState = TrailerPreloadState() // Shared observable state
@@ -179,7 +180,11 @@ struct MovieDetailView: View {
                     Button {
                         showFullInfo = true
                     } label: {
-                        InfoTextPreview(text: movie.info)
+                        InfoTextPreview(text: movie.info.replacingOccurrences(of: "<i>", with: "*")
+                            .replacingOccurrences(of: "</i>", with: "*")
+                            .replacingOccurrences(of: "<b>", with: "**")
+                            .replacingOccurrences(of: "</b>", with: "**")
+                        )
                     }
                     .focused($focusedElement, equals: .info)
                     .buttonStyle(TransparentFocusStyle())
@@ -191,11 +196,13 @@ struct MovieDetailView: View {
                 .frame(maxWidth: 800)
                 .focusScope(detailNamespace)
                 
-                Image(movie.id)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 450)
-                    .cornerRadius(20)
+                // Use R2ImageView with fallback to local asset
+                R2ImageView(
+                    url: movieStore.getPosterURL(for: movie),
+                    fallbackImageName: movie.id
+                )
+                .frame(width: 450)
+                .cornerRadius(20)
             }
         }
         .task {

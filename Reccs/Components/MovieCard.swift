@@ -9,6 +9,7 @@ import SwiftUI
 
 struct MovieCard: View {
     let movie: MovieEntry
+    @Environment(MovieStore.self) private var movieStore
     
     var body: some View {
         let movieColor = Color(hex: movie.color)
@@ -17,12 +18,15 @@ struct MovieCard: View {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(movieColor)
                     .frame(width: 300, height: 400)
-                Image(movie.id)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 300, height: 400)
-                    .clipped()
-                    .cornerRadius(12)
+                
+                // Use R2ImageView with fallback to local asset
+                R2ImageView(
+                    url: movieStore.getPosterURL(for: movie),
+                    fallbackImageName: movie.id
+                )
+                .frame(width: 300, height: 400)
+                .clipped()
+                .cornerRadius(12)
                 VStack(spacing: 6) {
                     if movie.title.original.isMongolian {
                         MongolianText(text: movie.title.original)

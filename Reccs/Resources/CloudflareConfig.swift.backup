@@ -1,0 +1,56 @@
+//
+//  CloudflareConfig.swift
+//  Reccs
+//
+//  Configuration for Cloudflare endpoints
+//
+
+import Foundation
+
+struct CloudflareConfig {
+    /// Your Cloudflare Worker API endpoint
+    /// 
+    /// To get this:
+    /// 1. Deploy the Worker: `wrangler deploy`
+    /// 2. Copy the URL from the output (e.g., "https://reccs-movies-api.xxx.workers.dev")
+    /// 3. Append "/api/movies" to it
+    /// 
+    /// Example: "https://reccs-movies-api.your-subdomain.workers.dev/api/movies"
+    static let d1APIEndpoint = "YOUR_WORKER_URL_HERE/api/movies"
+    
+    /// Your Cloudflare R2 public bucket URL
+    /// 
+    /// Using custom domain for reccs-media-images bucket
+    /// Images are in WebP format, named by movie ID (e.g., AFNOCFF.webp)
+    static let r2BaseURL = "https://images.reccs.media"
+    
+    /// Toggle between Cloudflare and local JSON
+    /// 
+    /// - `false`: Uses local movies.json file (good for development/testing)
+    /// - `true`: Fetches from Cloudflare D1 via the Worker
+    /// 
+    /// Start with false to verify the app works, then switch to true
+    static let useCloudflare = false
+}
+
+// MARK: - Setup Instructions
+/*
+ QUICK SETUP:
+ 
+ 1. Get your database ID:
+    Run: wrangler d1 list
+ 
+ 2. Update wrangler.toml with your database info
+ 
+ 3. Deploy the Worker:
+    Run: wrangler deploy
+    Copy the output URL
+ 
+ 4. Update this file:
+    - Set d1APIEndpoint to: "YOUR_WORKER_URL/api/movies"
+    - Set r2BaseURL to your R2 public domain
+    - Set useCloudflare to: true
+ 
+ See CLOUDFLARE_SETUP.md for detailed instructions.
+ See QUICK_START.md for a 3-step guide.
+ */

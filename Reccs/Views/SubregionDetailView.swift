@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct SubregionDetailView: View {
-    @State private var store = MovieStore()
+    @Environment(MovieStore.self) private var store
     @FocusState private var focusedElement: String?
     let id: String
     var body: some View {
@@ -67,7 +67,7 @@ struct SubregionDetailView: View {
 func getHorizontalRotation(for id: String) -> Double {
     if id.hasPrefix("AF") { return -20 }
     if ["AMCE", "AMCR"].contains(id) { return 85 }
-    if ["AMHI", "AMLO", "AMSO"].contains(id) { return 64 }
+    if ["AMWE", "AMNE", "AMSO"].contains(id) { return 64 }
     if id.hasPrefix("AM") { return 95 }
     if id=="ASSE" { return 250 }
     if id=="ASWE" { return 300 }
@@ -82,7 +82,7 @@ func getHorizontalRotation(for id: String) -> Double {
 func getVerticalRotation(for id: String) -> Double {
     if id.hasPrefix("AF") { return 0 }
     if ["AMNO", "AMEA", "AMSW", "AMNW", "AMIN"].contains(id) { return 40 }
-    if ["AMHI", "AMLO", "AMSO"].contains(id) { return -10 }
+    if ["AMWE", "AMNE", "AMSO"].contains(id) { return -10 }
     if id.hasPrefix("AM") { return 10 }
     if id=="ASSE" { return 0 }
     if id.hasPrefix("AS") { return 30 }

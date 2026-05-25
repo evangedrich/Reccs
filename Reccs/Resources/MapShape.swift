@@ -13694,9 +13694,9 @@ struct MapPaths: View {
     }
   }
 
-  struct AMHI: View { // SVGPath
+  struct AMWE: View { // SVGPath
 
-    struct AMHI: Shape {
+    struct AMWE: Shape {
 
       func path(in rect: CGRect) -> Path {
         Path { path in
@@ -14313,14 +14313,14 @@ struct MapPaths: View {
     }
 
     var body: some View {
-      AMHI()
+      AMWE()
         .fill(Color(red: 1, green: 0.8588, blue: 0.5961))
     }
   }
 
-  struct AMLO: View { // SVGPath
+  struct AMNE: View { // SVGPath
 
-    struct AMLO: Shape {
+    struct AMNE: Shape {
 
       func path(in rect: CGRect) -> Path {
         Path { path in
@@ -16705,7 +16705,7 @@ struct MapPaths: View {
     }
 
     var body: some View {
-      AMLO()
+      AMNE()
         .fill(Color(red: 0.498, green: 0.6235, blue: 0.8745))
     }
   }
@@ -34533,8 +34533,8 @@ struct MapPaths: View {
             AMIN()
             AMCE()
             AMCR()
-            AMHI()
-            AMLO()
+            AMWE()
+            AMNE()
             AMSO()
             ASNO()
             ASEA()
@@ -34581,8 +34581,8 @@ struct MapPaths: View {
           AMIN()
           AMCE()
           AMCR()
-          AMHI()
-          AMLO()
+          AMWE()
+          AMNE()
           AMSO()
           ASNO()
           ASEA()

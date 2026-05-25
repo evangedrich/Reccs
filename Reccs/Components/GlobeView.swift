@@ -9,7 +9,7 @@ import SwiftUI
 import SceneKit
 
 struct GlobeView: UIViewRepresentable {
-    @State private var store = MovieStore()
+    @Environment(MovieStore.self) private var store
     let defaultTexture: String = "blue-marble-3"
     let textureImage: String
     let horizontalRotation: Double
@@ -150,9 +150,9 @@ func coordToVector(lat: Double, lon: Double, radius: Float = 5) -> SCNVector3 {
 //        swiftUIColor = Color(hex: "#e85451") //red
 //    case ["WEEU", "AMCE", "AFEA", "OCAU", "ASEA"].contains(subregion):
 //        swiftUIColor = Color(hex: "#ff9d54") //orange
-//    case ["AMNW", "ASNO", "AMLO", "ASWE", "OCMC"].contains(subregion):
+//    case ["AMNW", "ASNO", "AMNE", "ASWE", "OCMC"].contains(subregion):
 //        swiftUIColor = Color(hex: "#6a95f0") //blue
-//    case ["ASSE", "ASIN", "EUEA", "AFWE", "AMHI", "AMSW"].contains(subregion):
+//    case ["ASSE", "ASIN", "EUEA", "AFWE", "AMWE", "AMSW"].contains(subregion):
 //        swiftUIColor = Color(hex: "#ffd070") //yellow
 //    case ["ASCE", "AMEA", "OCPL", "AFCE"].contains(subregion):
 //        swiftUIColor = Color(hex: "#50d895") //green

@@ -8,7 +8,7 @@
 import Foundation
 import SwiftUI
 
-struct MovieEntry: Identifiable, Codable, Hashable {
+struct MovieEntry: Identifiable, @unchecked Sendable, Hashable {
     let id: String
     let title: MovieTitle
     let year: String
@@ -22,6 +22,9 @@ struct MovieEntry: Identifiable, Codable, Hashable {
     let color: String
     let location: MovieLocation
 }
+
+// Separate nonisolated conformance to Codable
+extension MovieEntry: Codable {}
 
 struct MovieTitle: Codable, Hashable {
     let original: String
@@ -166,8 +169,8 @@ extension MovieEntry {
         case "AMIN": return "Interior North America"
         case "AMCE": return "Central America"
         case "AMCR": return "Caribbean"
-        case "AMHI": return "Highland South America"
-        case "AMLO": return "Lowland South America"
+        case "AMWE": return "Western South America"
+        case "AMNE": return "Northeast South America"
         case "AMSO": return "Southern South America"
         case "ASNO": return "North Asia"
         case "ASEA": return "East Asia"

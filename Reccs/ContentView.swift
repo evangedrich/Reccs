@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var store = MovieStore()
+    @Environment(MovieStore.self) private var store
     @State private var selectedTab = 0
     @FocusState private var isHomeFocused: Bool
     var body: some View {

@@ -30,7 +30,11 @@ struct FullInfoModal: View {
                 }
                 
                 ScrollView {
-                    let processedMarkdown = movie.info.replacingOccurrences(of: "\n", with: "\n\n")
+                    let processedMarkdown = movie.info.replacingOccurrences(of: "\n", with: "\n")
+                        .replacingOccurrences(of: "<i>", with: "*")
+                        .replacingOccurrences(of: "</i>", with: "*")
+                        .replacingOccurrences(of: "<b>", with: "**")
+                        .replacingOccurrences(of: "</b>", with: "**")
                     
                     if let attributedInfo = try? AttributedString(markdown: processedMarkdown, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)) {
                         Text(attributedInfo)
