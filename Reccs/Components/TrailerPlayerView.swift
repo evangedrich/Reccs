@@ -215,7 +215,6 @@ final class TrailerSession: Identifiable {
 struct TrailerPlayerView: View {
     let session: TrailerSession
     @Environment(\.dismiss) private var dismiss
-    @State private var isBuffering = true
     @State private var showSlowLoadingHint = false
     @State private var appearedAt = Date()
     @State private var hasStarted = false
@@ -225,24 +224,22 @@ struct TrailerPlayerView: View {
             Color.black.ignoresSafeArea()
 
             switch session.phase {
-            case .failed(let message):
-                failureView(message)
-            default:
+            case .ready:
+                // AVKit shows its own indicator while buffering, so nothing is layered on top.
                 VideoPlayer(player: session.player)
                     .ignoresSafeArea()
-
-                if session.phase != .ready || isBuffering {
-                    VStack(spacing: 24) {
-                        ProgressView()
-                        if showSlowLoadingHint {
-                            Text("Loading trailer…")
-                                .font(.title3)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(.white.opacity(0.8))
-                                .transition(.opacity)
-                        }
+            case .failed(let message):
+                failureView(message)
+            case .idle, .loading:
+                VStack(spacing: 24) {
+                    ProgressView()
+                    if showSlowLoadingHint {
+                        Text("Loading trailer…")
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.white.opacity(0.8))
+                            .transition(.opacity)
                     }
-                    .allowsHitTesting(false)
                 }
             }
         }
@@ -258,9 +255,6 @@ struct TrailerPlayerView: View {
             withAnimation { showSlowLoadingHint = true }
         }
         .onReceive(session.player.publisher(for: \.timeControlStatus)) { status in
-            withAnimation(.easeInOut(duration: 0.3)) {
-                isBuffering = status != .playing
-            }
             if status == .playing, !hasStarted {
                 hasStarted = true
                 trailerLog.info("Playback started \(Date().timeIntervalSince(appearedAt), format: .fixed(precision: 2))s after Play")
