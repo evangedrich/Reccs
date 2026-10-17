@@ -24,6 +24,7 @@ struct TrailerPlayerView: View {
         ZStack {
             VideoPlayer(player: player)
                 .ignoresSafeArea()
+                .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity) // Provide explicit sizing
             
             // Overlay for long loading
             if isBuffering && showLongLoadingMessage {
@@ -199,10 +200,23 @@ struct TrailerPlayerView: View {
         
         Task {
             do {
-                let youtube = YouTube(url: url, methods: [.remote, .local])
-                let streams = try await youtube.streams
+                // Try remote first, fallback to local if insufficient streams
+                var youtube = YouTube(url: url, methods: [.remote])
+                var streams = try await youtube.streams
                 
-                // 1. FIXED CODEC FILTERING: Convert enum to string safely
+                if streams.count < 10 {
+                    print("⚠️ [PLAYER] Only \(streams.count) streams found remotely, retrying with local extraction...")
+                    do {
+                        youtube = YouTube(url: url, methods: [.local])
+                        streams = try await youtube.streams
+                        print("✅ [PLAYER] Local extraction succeeded with \(streams.count) streams")
+                    } catch {
+                        print("❌ [PLAYER] Local extraction also failed: \(error)")
+                        // Continue with whatever streams we have
+                    }
+                }
+                
+                // 1. Get best separate streams for highest quality
                 let bestVideo = streams.filter { stream in
                     let codecString = stream.videoCodec.map { "\($0)".lowercased() } ?? ""
                     return stream.audioCodec == nil && codecString.contains("avc1")
@@ -213,24 +227,32 @@ struct TrailerPlayerView: View {
                 }.highestResolutionStream()
 
                 guard let vURL = bestVideo?.url, let aURL = bestAudio?.url else {
-                    // Fallback to 720p progressive if 1080p muxed fails
+                    // Fallback to best progressive if separate streams unavailable
                     if let fallback = streams.filter({ $0.isProgressive }).highestResolutionStream() {
+                        print("📹 [PLAYER] Using progressive fallback")
                         setupPlayer(with: AVPlayerItem(url: fallback.url))
                     }
                     return
                 }
 
                 // 2. PARALLEL TRACK LOADING: Load tracks without blocking
-                let videoAsset = AVURLAsset(url: vURL)
-                let audioAsset = AVURLAsset(url: aURL)
+                let videoAsset = AVURLAsset(url: vURL, options: [
+                    AVURLAssetPreferPreciseDurationAndTimingKey: false
+                ])
+                let audioAsset = AVURLAsset(url: aURL, options: [
+                    AVURLAssetPreferPreciseDurationAndTimingKey: false
+                ])
                 
                 // Start loading tracks
                 async let vTracks = videoAsset.load(.tracks)
                 async let aTracks = audioAsset.load(.tracks)
                 
                 let composition = AVMutableComposition()
-                let compV = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
-                let compA = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
+                guard let compV = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid),
+                      let compA = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) else {
+                    print("❌ [PLAYER] Failed to create composition tracks")
+                    return
+                }
                 
                 // Wait for parallel loads to finish
                 if let vTrack = try await vTracks.first, let aTrack = try await aTracks.first {
@@ -250,8 +272,8 @@ struct TrailerPlayerView: View {
                     
                     let timeRange = CMTimeRange(start: .zero, duration: CMTime(seconds: safeDuration, preferredTimescale: 600))
                     
-                    try compV?.insertTimeRange(timeRange, of: vTrack, at: .zero)
-                    try compA?.insertTimeRange(timeRange, of: aTrack, at: .zero)
+                    try compV.insertTimeRange(timeRange, of: vTrack, at: .zero)
+                    try compA.insertTimeRange(timeRange, of: aTrack, at: .zero)
                     
                     print("✅ [PLAYER] Fresh composition created with duration: \(safeDuration)s")
                     

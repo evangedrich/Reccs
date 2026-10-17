@@ -37,7 +37,7 @@ export default {
           headers: {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
-            'Cache-Control': 'public, max-age=3600' // Cache for 1 hour
+            'Cache-Control': 'no-cache, no-store, must-revalidate' // No caching for development
           }
         });
       } catch (error) {
@@ -86,7 +86,7 @@ export default {
             headers: {
               'Content-Type': 'application/json',
               'Access-Control-Allow-Origin': '*',
-              'Cache-Control': 'public, max-age=3600'
+              'Cache-Control': 'no-cache, no-store, must-revalidate' // No caching for development
             }
           });
         } else {
@@ -156,7 +156,7 @@ function rowToMovie(row) {
   };
   
   // Parse the info field (it's stored as JSON array in D1)
-  // The iOS app expects a single string, so we join the array
+  // The tvOS app expects a single string, so we join the array
   const infoParsed = parseJson(row.info);
   const info = Array.isArray(infoParsed) ? infoParsed.join('\n\n') : (row.info || '');
   

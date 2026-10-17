@@ -180,7 +180,8 @@ struct MovieDetailView: View {
                     Button {
                         showFullInfo = true
                     } label: {
-                        InfoTextPreview(text: movie.info.replacingOccurrences(of: "<i>", with: "*")
+                        InfoTextPreview(text: movie.info.replacingOccurrences(of: "\n", with: " ")
+                            .replacingOccurrences(of: "<i>", with: "*")
                             .replacingOccurrences(of: "</i>", with: "*")
                             .replacingOccurrences(of: "<b>", with: "**")
                             .replacingOccurrences(of: "</b>", with: "**")
@@ -252,26 +253,87 @@ struct MovieDetailView: View {
         guard let url = URL(string: movie.trailer) else { return }
         
         do {
-            // 2. Extract streams (Remote API is faster and more reliable)
-            let youtube = YouTube(url: url, methods: [.remote, .local])
-            let streams = try await youtube.streams
+            // 2. Extract streams (Try remote first, then local if we get too few)
+            var youtube = YouTube(url: url, methods: [.remote])
+            var streams = try await youtube.streams
+            
+            // If we got very few streams, retry with local method
+            if streams.count < 10 {
+                print("⚠️ [PRELOAD] Only \(streams.count) streams found remotely, retrying with local extraction...")
+                do {
+                    youtube = YouTube(url: url, methods: [.local])
+                    streams = try await youtube.streams
+                    print("✅ [PRELOAD] Local extraction succeeded with \(streams.count) streams")
+                } catch {
+                    print("❌ [PRELOAD] Local extraction failed: \(error)")
+                    
+                    // If local failed and we have very few streams, try one more time with remote after a delay
+                    if streams.count < 5 {
+                        print("⏳ [PRELOAD] Waiting 1s before final retry...")
+                        try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second delay
+                        
+                        do {
+                            youtube = YouTube(url: url, methods: [.remote])
+                            let retryStreams = try await youtube.streams
+                            if retryStreams.count > streams.count {
+                                streams = retryStreams
+                                print("✅ [PRELOAD] Retry succeeded with \(streams.count) streams")
+                            }
+                        } catch {
+                            print("❌ [PRELOAD] Final retry also failed, continuing with \(streams.count) streams")
+                        }
+                    }
+                }
+            }
+            
+            // DEBUG: Log all available streams to understand what's available
+            print("📦 [PRELOAD] Found \(streams.count) total streams for \(movie.title.original)")
+            let videoOnlyCount = streams.filter { $0.videoCodec != nil && $0.audioCodec == nil }.count
+            let audioOnlyCount = streams.filter { $0.videoCodec == nil && $0.audioCodec != nil }.count
+            let progressiveCount = streams.filter { $0.isProgressive }.count
+            print("   📹 Video-only: \(videoOnlyCount), 🎵 Audio-only: \(audioOnlyCount), 🎬 Progressive: \(progressiveCount)")
             
             // 3. Try to get the highest quality by combining separate video + audio
             let bestVideo = streams.filter { stream in
                 let codecString = stream.videoCodec.map { "\($0)".lowercased() } ?? ""
+                // Accept any H.264 variant (avc1) for maximum compatibility with tvOS
                 return stream.audioCodec == nil && codecString.contains("avc1")
             }.highestResolutionStream()
             
-            let bestAudio = streams.filter {
-                $0.videoCodec == nil && $0.audioCodec != nil
+            let bestAudio = streams.filter { stream in
+                stream.videoCodec == nil && stream.audioCodec != nil
             }.highestResolutionStream()
+            
+            // Log what we found for debugging
+            if let video = bestVideo {
+                print("🎬 [PRELOAD] Best video stream found with codec: \(video.videoCodec.map { "\($0)" } ?? "unknown")")
+            } else {
+                print("❌ [PRELOAD] No avc1 video stream found!")
+                // Debug: Show what video codecs ARE available
+                let availableVideoCodecs = streams.filter { $0.videoCodec != nil && $0.audioCodec == nil }
+                    .compactMap { $0.videoCodec }
+                    .map { "\($0)" }
+                if !availableVideoCodecs.isEmpty {
+                    print("   Available video codecs: \(availableVideoCodecs.joined(separator: ", "))")
+                }
+            }
+            if let audio = bestAudio {
+                print("🎵 [PRELOAD] Best audio stream found with codec: \(audio.audioCodec.map { "\($0)" } ?? "unknown")")
+            } else {
+                print("❌ [PRELOAD] No audio-only stream found!")
+            }
             
             if let vURL = bestVideo?.url, let aURL = bestAudio?.url {
                 // HIGH QUALITY PATH: Separate video + audio streams (1080p capable)
                 print("🎥 [PRELOAD] Using high-quality separate streams")
                 
-                let videoAsset = AVURLAsset(url: vURL)
-                let audioAsset = AVURLAsset(url: aURL)
+                // Configure assets for optimal streaming
+                let videoAsset = AVURLAsset(url: vURL, options: [
+                    AVURLAssetPreferPreciseDurationAndTimingKey: false
+                ])
+                let audioAsset = AVURLAsset(url: aURL, options: [
+                    AVURLAssetPreferPreciseDurationAndTimingKey: false
+                ])
                 
                 // Store assets immediately so they start downloading
                 await MainActor.run {
@@ -282,55 +344,76 @@ struct MovieDetailView: View {
                 
                 // Create composition and try to insert tracks
                 let composition = AVMutableComposition()
-                let compV = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
-                let compA = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
-                
-                do {
-                    // Load tracks first
-                    async let vTracks = videoAsset.load(.tracks)
-                    async let aTracks = audioAsset.load(.tracks)
-                    
-                    if let vTrack = try await vTracks.first,
-                       let aTrack = try await aTracks.first {
-                        // Load both time ranges to compare
-                        let vTrackTimeRange = try await vTrack.load(.timeRange)
-                        let aTrackTimeRange = try await aTrack.load(.timeRange)
+                if let compV = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid),
+                   let compA = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) {
+                    do {
+                        // Load tracks first with timeout protection
+                        async let vTracksTask = videoAsset.load(.tracks)
+                        async let aTracksTask = audioAsset.load(.tracks)
                         
-                        let vDuration = CMTimeGetSeconds(vTrackTimeRange.duration)
-                        let aDuration = CMTimeGetSeconds(aTrackTimeRange.duration)
+                        let vTracks = try await vTracksTask
+                        let aTracks = try await aTracksTask
                         
-                        print("📊 [PRELOAD] Video track: \(vDuration)s, Audio track: \(aDuration)s")
-                        
-                        // YouTube bug: Streams report double the actual duration
-                        // Use half the duration for compositions to avoid playing duplicated content
-                        let safeDuration = min(vDuration, aDuration) / 2.0
-                        
-                        print("✅ [PRELOAD] Using half duration (\(safeDuration)s) to avoid YouTube duplicate bug")
-                        
-                        let timeRange = CMTimeRange(start: .zero, duration: CMTime(seconds: safeDuration, preferredTimescale: 600))
-                        
-                        try compV?.insertTimeRange(timeRange, of: vTrack, at: .zero)
-                        try compA?.insertTimeRange(timeRange, of: aTrack, at: .zero)
-                        
-                        print("✅ [PRELOAD] Composition created with duration: \(safeDuration)s")
-                        
-                        let item = AVPlayerItem(asset: composition)
-                        item.preferredForwardBufferDuration = 1.0
-                        
-                        // Only set preloadingAsset AFTER tracks are successfully inserted
-                        await MainActor.run {
-                            self.preloadState.preloadingAsset = composition
-                            self.preloadState.preloadedTrailerItem = item
-                            print("✅ [PRELOAD READY] High-quality composition ready for \(movie.title.original)")
+                        if let vTrack = vTracks.first, let aTrack = aTracks.first {
+                            // Load both time ranges to compare
+                            let vTrackTimeRange = try await vTrack.load(.timeRange)
+                            let aTrackTimeRange = try await aTrack.load(.timeRange)
+                            
+                            // Check the actual resolution of the video track
+                            let naturalSize = try await vTrack.load(.naturalSize)
+                            print("📐 [PRELOAD] Video resolution: \(Int(naturalSize.width))x\(Int(naturalSize.height))")
+                            
+                            let vDuration = CMTimeGetSeconds(vTrackTimeRange.duration)
+                            let aDuration = CMTimeGetSeconds(aTrackTimeRange.duration)
+                            
+                            print("📊 [PRELOAD] Video track: \(vDuration)s, Audio track: \(aDuration)s")
+                            
+                            // YouTube bug: Streams report double the actual duration
+                            // Use half the duration for compositions to avoid playing duplicated content
+                            let safeDuration = min(vDuration, aDuration) / 2.0
+                            
+                            print("✅ [PRELOAD] Using half duration (\(safeDuration)s) to avoid YouTube duplicate bug")
+                            
+                            let timeRange = CMTimeRange(start: .zero, duration: CMTime(seconds: safeDuration, preferredTimescale: 600))
+                            
+                            try compV.insertTimeRange(timeRange, of: vTrack, at: .zero)
+                            try compA.insertTimeRange(timeRange, of: aTrack, at: .zero)
+                            
+                            print("✅ [PRELOAD] Composition created with duration: \(safeDuration)s")
+                            
+                            let item = AVPlayerItem(asset: composition)
+                            item.preferredForwardBufferDuration = 1.0
+                            
+                            // Only set preloadingAsset AFTER tracks are successfully inserted
+                            await MainActor.run {
+                                self.preloadState.preloadingAsset = composition
+                                self.preloadState.preloadedTrailerItem = item
+                                print("✅ [PRELOAD READY] High-quality composition ready for \(movie.title.original)")
+                            }
+                            return // Successfully used high-quality streams, don't fall back
+                        } else {
+                            print("❌ [PRELOAD] No tracks found in assets")
+                            // Fall through to progressive
                         }
+                    } catch {
+                        print("⚠️ [PRELOAD] Track insertion failed: \(error). Will try progressive fallback.")
                     }
-                } catch {
-                    print("⚠️ [PRELOAD] Track insertion failed: \(error). Assets still available for playback.")
+                } else {
+                    print("❌ [PRELOAD] Failed to create composition tracks")
+                    // Fall through to progressive
                 }
-            } else if let stream = streams.filter({ $0.isProgressive }).highestResolutionStream() {
-                // FALLBACK: Progressive stream (typically 720p max)
+                // If we get here, high-quality composition failed, fall through to progressive
+            } else {
+                print("⚠️ [PRELOAD] No separate video/audio streams available, using progressive")
+            }
+            
+            // FALLBACK: Progressive stream (typically 720p max, but get the best available)
+            if let stream = streams.filter({ $0.isProgressive }).highestResolutionStream() {
                 print("📹 [PRELOAD] Using progressive stream fallback")
-                let asset = AVURLAsset(url: stream.url)
+                
+                let asset = AVURLAsset(url: stream.url, options: [
+                    AVURLAssetPreferPreciseDurationAndTimingKey: false
+                ])
                 let item = AVPlayerItem(asset: asset)
                 item.preferredForwardBufferDuration = 1.0
                 
@@ -339,6 +422,8 @@ struct MovieDetailView: View {
                     self.preloadState.preloadedTrailerItem = item
                     print("✅ [PRELOAD READY] Trailer for \(movie.title.original) is buffered and ready for instant play.")
                 }
+            } else {
+                print("❌ [PRELOAD] No suitable streams found at all")
             }
         } catch {
             print("Preload failed: \(error)")

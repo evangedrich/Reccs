@@ -33,6 +33,7 @@ actor CloudflareService {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
@@ -54,7 +55,7 @@ actor CloudflareService {
     }
     
     /// Get the R2 URL for a movie poster image
-    func getPosterURL(for movieID: String) -> URL? {
+    nonisolated func getPosterURL(for movieID: String) -> URL? {
         // Images are stored in /posters/ directory as WebP format
         return URL(string: "\(r2BaseURL)/posters/\(movieID).webp")
     }
@@ -68,6 +69,7 @@ actor CloudflareService {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         
         do {
             let (data, response) = try await URLSession.shared.data(for: request)

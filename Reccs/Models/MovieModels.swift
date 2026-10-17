@@ -24,7 +24,7 @@ struct MovieEntry: Identifiable, @unchecked Sendable, Hashable {
 }
 
 // Separate nonisolated conformance to Codable
-extension MovieEntry: Codable {}
+nonisolated extension MovieEntry: Codable {}
 
 struct MovieTitle: Codable, Hashable {
     let original: String
@@ -155,39 +155,6 @@ extension MovieEntry {
 extension MovieEntry {
     var regionLabel: String {
         let code = String(id.prefix(4)).uppercased()
-        
-        switch code {
-        case "AFNO": return "North Africa"
-        case "AFEA": return "East Africa"
-        case "AFSO": return "Southern Africa"
-        case "AFCE": return "Central Africa"
-        case "AFWE": return "West Africa"
-        case "AMNO": return "Northern North America"
-        case "AMEA": return "Eastern North America"
-        case "AMSW": return "Southwest North America"
-        case "AMNW": return "Northwest North America"
-        case "AMIN": return "Interior North America"
-        case "AMCE": return "Central America"
-        case "AMCR": return "Caribbean"
-        case "AMWE": return "Western South America"
-        case "AMNE": return "Northeast South America"
-        case "AMSO": return "Southern South America"
-        case "ASNO": return "North Asia"
-        case "ASEA": return "East Asia"
-        case "ASSE": return "Southeast Asia"
-        case "ASHI": return "Highland Asia"
-        case "ASSO": return "South Asia"
-        case "ASWE": return "West Asia"
-        case "ASCE": return "Central Asia"
-        case "ASIN": return "Inner Asia"
-        case "EUEA": return "Eastern Europe"
-        case "EUWE": return "Western Europe"
-        case "OCAU": return "Australia"
-        case "OCMD": return "Madagascar"
-        case "OCML": return "Melanesia"
-        case "OCMC": return "Micronesia"
-        case "OCPL": return "Polynesia"
-        default: return "" // Fallback for unknown codes
-        }
+        return SubregionNames[code] ?? ""
     }
 }
