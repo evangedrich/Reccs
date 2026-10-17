@@ -10,7 +10,18 @@
 		4F9A032A2F57E548008284EC /* YouTubeKit in Frameworks */ = {isa = PBXBuildFile; productRef = 4F9A03292F57E548008284EC /* YouTubeKit */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		AA0000000000000000000010 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4F5420E12F3FA472001FDF14 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4F5420E82F3FA472001FDF14;
+			remoteInfo = Reccs;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		AA0000000000000000000001 /* ReccsUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ReccsUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4F5420E92F3FA472001FDF14 /* Reccs.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Reccs.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -25,6 +36,11 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		AA0000000000000000000002 /* ReccsUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ReccsUITests;
+			sourceTree = "<group>";
+		};
 		4F5420EB2F3FA472001FDF14 /* Reccs */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -36,6 +52,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		AA0000000000000000000003 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4F5420E62F3FA472001FDF14 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -51,6 +74,7 @@
 			isa = PBXGroup;
 			children = (
 				4F5420EB2F3FA472001FDF14 /* Reccs */,
+				AA0000000000000000000002 /* ReccsUITests */,
 				4F5420EA2F3FA472001FDF14 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -59,6 +83,7 @@
 			isa = PBXGroup;
 			children = (
 				4F5420E92F3FA472001FDF14 /* Reccs.app */,
+				AA0000000000000000000001 /* ReccsUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -66,6 +91,27 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		AA0000000000000000000004 /* ReccsUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA0000000000000000000009 /* Build configuration list for PBXNativeTarget "ReccsUITests" */;
+			buildPhases = (
+				AA0000000000000000000005 /* Sources */,
+				AA0000000000000000000003 /* Frameworks */,
+				AA0000000000000000000006 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AA0000000000000000000011 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				AA0000000000000000000002 /* ReccsUITests */,
+			);
+			name = ReccsUITests;
+			productName = ReccsUITests;
+			productReference = AA0000000000000000000001 /* ReccsUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		4F5420E82F3FA472001FDF14 /* Reccs */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 4F5420F42F3FA474001FDF14 /* Build configuration list for PBXNativeTarget "Reccs" */;
@@ -102,6 +148,10 @@
 					4F5420E82F3FA472001FDF14 = {
 						CreatedOnToolsVersion = 26.2;
 					};
+					AA0000000000000000000004 = {
+						CreatedOnToolsVersion = 26.2;
+						TestTargetID = 4F5420E82F3FA472001FDF14;
+					};
 				};
 			};
 			buildConfigurationList = 4F5420E42F3FA472001FDF14 /* Build configuration list for PBXProject "Reccs" */;
@@ -122,11 +172,19 @@
 			projectRoot = "";
 			targets = (
 				4F5420E82F3FA472001FDF14 /* Reccs */,
+				AA0000000000000000000004 /* ReccsUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		AA0000000000000000000006 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4F5420E72F3FA472001FDF14 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -137,6 +195,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		AA0000000000000000000005 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4F5420E52F3FA472001FDF14 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -146,7 +211,51 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		AA0000000000000000000011 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4F5420E82F3FA472001FDF14 /* Reccs */;
+			targetProxy = AA0000000000000000000010 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		AA0000000000000000000007 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3XJ3QLPXZ4;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.evangedrich.ReccsUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 3;
+				TEST_TARGET_NAME = Reccs;
+				TVOS_DEPLOYMENT_TARGET = 17.6;
+			};
+			name = Debug;
+		};
+		AA0000000000000000000008 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3XJ3QLPXZ4;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.evangedrich.ReccsUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 3;
+				TEST_TARGET_NAME = Reccs;
+				TVOS_DEPLOYMENT_TARGET = 17.6;
+			};
+			name = Release;
+		};
 		4F5420F22F3FA474001FDF14 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -337,6 +446,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		AA0000000000000000000009 /* Build configuration list for PBXNativeTarget "ReccsUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA0000000000000000000007 /* Debug */,
+				AA0000000000000000000008 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		4F5420E42F3FA472001FDF14 /* Build configuration list for PBXProject "Reccs" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
