@@ -14,7 +14,7 @@ import YouTubeKit
 
 nonisolated let trailerLog = Logger(subsystem: "com.evangedrich.Reccs", category: "Trailer")
 
-enum TrailerError: LocalizedError {
+nonisolated enum TrailerError: LocalizedError {
     case invalidLink
     case noPlayableStreams
     case timedOut
@@ -29,7 +29,7 @@ enum TrailerError: LocalizedError {
 }
 
 /// A YouTube link reduced to what playback needs: the video ID and an optional start offset (`?t=`).
-struct TrailerReference: Hashable {
+nonisolated struct TrailerReference: Hashable {
     let videoID: String
     let startTime: Double
 
@@ -82,7 +82,7 @@ struct TrailerReference: Hashable {
 
 /// One way to play a trailer: separate video + audio streams (how YouTube serves anything above 360p),
 /// or a single stream carrying both.
-enum TrailerSource {
+nonisolated enum TrailerSource {
     case split(video: YouTubeKit.Stream, audio: YouTubeKit.Stream)
     case muxed(YouTubeKit.Stream)
 
@@ -114,7 +114,7 @@ enum TrailerSource {
     }
 
     /// The best audio-only stream: AAC first (universally supported), then highest bitrate.
-    nonisolated static func bestAudio(in streams: [YouTubeKit.Stream]) -> YouTubeKit.Stream? {
+    static func bestAudio(in streams: [YouTubeKit.Stream]) -> YouTubeKit.Stream? {
         streams
             .filter { $0.includesAudioTrack && !$0.includesVideoTrack }
             .max { ($0.audioCodec == .mp4a ? 1 : 0, $0.bitrate ?? 0) < ($1.audioCodec == .mp4a ? 1 : 0, $1.bitrate ?? 0) }
@@ -440,7 +440,7 @@ nonisolated func withTimeout<T: Sendable>(
 }
 
 extension URL {
-    func queryValue(_ name: String) -> String? {
+    nonisolated func queryValue(_ name: String) -> String? {
         URLComponents(url: self, resolvingAgainstBaseURL: false)?
             .queryItems?.first { $0.name == name }?.value
     }
