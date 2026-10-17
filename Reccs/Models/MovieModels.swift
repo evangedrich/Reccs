@@ -24,7 +24,7 @@ struct MovieEntry: Identifiable, @unchecked Sendable, Hashable {
 }
 
 // Separate nonisolated conformance to Codable
-extension MovieEntry: Codable {}
+nonisolated extension MovieEntry: Codable {}
 
 struct MovieTitle: Codable, Hashable {
     let original: String
