@@ -32,10 +32,12 @@ struct GeoschemeView: View {
                     // LAYER 3: Invisible Focus Targets
                     Group {
                         focusSubregion(id: "AFNO", x: 725, y: 240)
-                        focusSubregion(id: "AFEA", x: 830, y: 350)
+                        focusSubregion(id: "AFNE", x: 865, y: 350)
+                        focusSubregion(id: "AFEA", x: 835, y: 410)
                         focusSubregion(id: "AFSO", x: 780, y: 480)
                         focusSubregion(id: "AFCE", x: 740, y: 380)
                         focusSubregion(id: "AFWE", x: 640, y: 320)
+                        focusSubregion(id: "AFNC", x: 735, y: 310)
                     }
 
                     Group {
@@ -54,9 +56,10 @@ struct GeoschemeView: View {
                     Group {
                         focusSubregion(id: "ASNO", x: 1000, y: 150)
                         focusSubregion(id: "ASEA", x: 1150, y: 300)
-                        focusSubregion(id: "ASSE", x: 1100, y: 450)
+                        focusSubregion(id: "ASSE", x: 1095, y: 400)
                         focusSubregion(id: "ASHI", x: 1050, y: 350)
                         focusSubregion(id: "ASSO", x: 950, y: 400)
+                        focusSubregion(id: "ASSW", x: 915, y: 315)
                         focusSubregion(id: "ASWE", x: 850, y: 300)
                         focusSubregion(id: "ASCE", x: 950, y: 250)
                         focusSubregion(id: "ASIN", x: 1000, y: 280)
@@ -67,6 +70,7 @@ struct GeoschemeView: View {
                     Group {
                         focusSubregion(id: "OCAU", x: 1200, y: 550)
                         focusSubregion(id: "OCMD", x: 880, y: 520)
+                        focusSubregion(id: "OCMR", x: 1170, y: 445)
                         focusSubregion(id: "OCML", x: 1300, y: 500)
                         focusSubregion(id: "OCMC", x: 1250, y: 420)
                         focusSubregion(id: "OCPL", x: 1350, y: 450)
@@ -111,10 +115,12 @@ struct GeoschemeView: View {
     func viewForSubregion(_ id: String) -> some View {
         switch id {
         case "AFNO": MapPaths.AFNO()
+        case "AFNE": MapPaths.AFNE()
         case "AFEA": MapPaths.AFEA()
         case "AFSO": MapPaths.AFSO()
         case "AFCE": MapPaths.AFCE()
         case "AFWE": MapPaths.AFWE()
+        case "AFNC": MapPaths.AFNC()
         case "AMNO": MapPaths.AMNO()
         case "AMEA": MapPaths.AMEA()
         case "AMSW": MapPaths.AMSW()
@@ -130,6 +136,7 @@ struct GeoschemeView: View {
         case "ASSE": MapPaths.ASSE()
         case "ASHI": MapPaths.ASHI()
         case "ASSO": MapPaths.ASSO()
+        case "ASSW": MapPaths.ASSW()
         case "ASWE": MapPaths.ASWE()
         case "ASCE": MapPaths.ASCE()
         case "ASIN": MapPaths.ASIN()
@@ -137,6 +144,7 @@ struct GeoschemeView: View {
         case "EUWE": MapPaths.EUWE()
         case "OCAU": MapPaths.OCAU()
         case "OCMD": MapPaths.OCMD()
+        case "OCMR": MapPaths.OCMR()
         case "OCML": MapPaths.OCML()
         case "OCMC": MapPaths.OCMC()
         case "OCPL": MapPaths.OCPL()
