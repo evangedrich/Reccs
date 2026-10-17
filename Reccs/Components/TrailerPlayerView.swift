@@ -5,333 +5,294 @@
 //  Created by Evan Gedrich Pintado on 3/3/26.
 //
 
-import SwiftUI
 import AVKit
-import YouTubeKit
+import Combine
+import os
+import SwiftUI
+
+/// Owns one movie's trailer playback. The detail page starts it so the trailer is resolved and
+/// buffering before Play is pressed; the full-screen player only shows what it has.
+@MainActor
+@Observable
+final class TrailerSession: Identifiable {
+    enum Phase: Equatable {
+        case idle
+        case loading
+        case ready
+        case failed(String)
+    }
+
+    let link: String
+    let title: String
+    let player = AVPlayer()
+    private(set) var phase: Phase = .idle
+    /// Incremented when the trailer plays to the end, so the player view can close itself.
+    private(set) var finishedCount = 0
+
+    @ObservationIgnored private var media: TrailerMedia?
+    @ObservationIgnored private var loadTask: Task<Void, Never>?
+    @ObservationIgnored private var itemObservers: Set<AnyCancellable> = []
+    @ObservationIgnored private var isPresented = false
+    @ObservationIgnored private var hasRetriedFresh = false
+
+    /// While the trailer sits paused behind the detail page, buffer only this much so it starts
+    /// instantly without downloading the whole file. Lifted once playback starts.
+    private let idleBufferDuration: TimeInterval = 10
+
+    init(link: String, title: String) {
+        self.link = link
+        self.title = title
+    }
+
+    /// Resolves the trailer and attaches it to the (paused) player so AVFoundation starts buffering.
+    /// Safe to call repeatedly; does nothing while loading or ready.
+    func preload() {
+        if let media, media.expiresAt <= .now {
+            // YouTube's signed URLs have lapsed while the page sat open.
+            reset()
+        }
+        guard phase == .idle || isFailed else { return }
+        guard let reference = TrailerReference(link) else {
+            phase = .failed(TrailerError.invalidLink.localizedDescription)
+            return
+        }
+
+        phase = .loading
+        loadTask = Task { [weak self] in
+            do {
+                let media = try await TrailerLoader.shared.media(for: reference)
+                guard !Task.isCancelled else { return }
+                self?.install(media)
+            } catch {
+                guard !Task.isCancelled else { return }
+                self?.fail(with: error)
+            }
+        }
+    }
+
+    /// The full-screen player appeared.
+    func startPlayback() {
+        isPresented = true
+        preload()
+        guard phase == .ready, let item = player.currentItem else { return }
+        let duration = item.duration
+        if duration.isNumeric, item.currentTime().seconds >= duration.seconds - 1 {
+            player.seek(to: .zero)
+        }
+        item.preferredForwardBufferDuration = 0 // let AVFoundation decide during playback
+        player.play()
+    }
+
+    /// The full-screen player went away. Rewind so the next Play starts from the top, already buffered.
+    func stopPlayback() {
+        isPresented = false
+        player.pause()
+        if let item = player.currentItem {
+            item.preferredForwardBufferDuration = idleBufferDuration
+            player.seek(to: .zero)
+        }
+    }
+
+    /// Leaving the movie page: release the stream and stop buffering.
+    func tearDown() {
+        isPresented = false
+        reset()
+    }
+
+    /// Manual retry from the error screen: start over with freshly extracted URLs.
+    func retry() {
+        if let reference = TrailerReference(link) {
+            TrailerLoader.shared.forget(reference)
+        }
+        hasRetriedFresh = false
+        reset()
+        preload()
+    }
+
+    // MARK: - Private
+
+    private var isFailed: Bool {
+        if case .failed = phase { return true }
+        return false
+    }
+
+    private func reset() {
+        loadTask?.cancel()
+        loadTask = nil
+        itemObservers.removeAll()
+        player.pause()
+        player.replaceCurrentItem(with: nil)
+        media = nil
+        phase = .idle
+    }
+
+    private func install(_ media: TrailerMedia, resumingAt time: CMTime? = nil) {
+        self.media = media
+
+        let item = AVPlayerItem(asset: media.asset)
+        item.preferredForwardBufferDuration = isPresented ? 0 : idleBufferDuration
+        let titleItem = AVMutableMetadataItem()
+        titleItem.identifier = .commonIdentifierTitle
+        titleItem.value = title as NSString
+        titleItem.extendedLanguageTag = "und"
+        item.externalMetadata = [titleItem]
+        observe(item)
+
+        player.replaceCurrentItem(with: item)
+        if let time, time.isNumeric, time.seconds > 0 {
+            player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero)
+        }
+        phase = .ready
+        if isPresented {
+            player.play()
+        }
+    }
+
+    private func observe(_ item: AVPlayerItem) {
+        itemObservers.removeAll()
+        item.publisher(for: \.status)
+            .filter { $0 == .failed }
+            .receive(on: RunLoop.main)
+            .sink { [weak self, weak item] _ in
+                self?.recover(from: item?.error)
+            }
+            .store(in: &itemObservers)
+        NotificationCenter.default.publisher(for: AVPlayerItem.failedToPlayToEndTimeNotification, object: item)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] note in
+                self?.recover(from: note.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error)
+            }
+            .store(in: &itemObservers)
+        NotificationCenter.default.publisher(for: AVPlayerItem.didPlayToEndTimeNotification, object: item)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.finishedCount += 1
+            }
+            .store(in: &itemObservers)
+    }
+
+    /// Playback broke (expired URL, network, decoder): step down to the next source, then try fresh
+    /// URLs once, and only then show an error.
+    private func recover(from error: Error?) {
+        guard let media, phase == .ready else { return }
+        trailerLog.error("Playback failed: \(error?.localizedDescription ?? "unknown", privacy: .public)")
+        let position = player.currentTime()
+        itemObservers.removeAll()
+        phase = .loading
+
+        loadTask = Task { [weak self] in
+            do {
+                var next: TrailerMedia?
+                if !media.fallbacks.isEmpty {
+                    next = try? await TrailerLoader.shared.fallback(after: media)
+                }
+                if next == nil, let self, !self.hasRetriedFresh {
+                    // Every source from this extraction failed; the URLs themselves may be bad.
+                    self.hasRetriedFresh = true
+                    TrailerLoader.shared.forget(media.reference)
+                    next = try await TrailerLoader.shared.media(for: media.reference)
+                }
+                guard let next else { throw error ?? TrailerError.noPlayableStreams }
+                guard !Task.isCancelled else { return }
+                self?.install(next, resumingAt: position)
+            } catch {
+                guard !Task.isCancelled else { return }
+                self?.fail(with: error)
+            }
+        }
+    }
+
+    private func fail(with error: Error) {
+        trailerLog.error("Trailer unavailable: \(error.localizedDescription, privacy: .public)")
+        itemObservers.removeAll()
+        player.replaceCurrentItem(with: nil)
+        media = nil
+        phase = .failed((error as? TrailerError)?.localizedDescription
+            ?? "The trailer couldn't be loaded from YouTube right now.")
+    }
+}
 
 struct TrailerPlayerView: View {
-    let videoURL: String
-    let preloadState: TrailerPreloadState // Receive the shared observable state
-    @Environment(\.dismiss) var dismiss
-    @State private var player = AVPlayer()
-    
-    @State private var isBuffering = true
-    @State private var showLongLoadingMessage = false
-    @State private var hasReachedEnd = false
-    @State private var observerStoppedCheckTimer: Timer?
+    let session: TrailerSession
+    @Environment(\.dismiss) private var dismiss
+    @State private var showSlowLoadingHint = false
+    @State private var appearedAt = Date()
+    @State private var hasStarted = false
 
     var body: some View {
         ZStack {
-            VideoPlayer(player: player)
-                .ignoresSafeArea()
-                .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity) // Provide explicit sizing
-            
-            // Overlay for long loading
-            if isBuffering && showLongLoadingMessage {
-                Text("Buffering High-Quality Stream...")
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white)
-                    .transition(.opacity)
-                    .offset(y: -100)
+            Color.black.ignoresSafeArea()
+
+            switch session.phase {
+            case .ready:
+                // AVKit shows its own indicator while buffering, so nothing is layered on top.
+                VideoPlayer(player: session.player)
+                    .ignoresSafeArea()
+            case .failed(let message):
+                failureView(message)
+            case .idle, .loading:
+                VStack(spacing: 24) {
+                    ProgressView()
+                    if showSlowLoadingHint {
+                        Text("Loading trailer…")
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.white.opacity(0.8))
+                            .transition(.opacity)
+                    }
+                }
             }
         }
         .onAppear {
-            print("📺 [INIT] TrailerPlayerView received - composition: \(preloadState.preloadingAsset != nil), video/audio: \(preloadState.preloadingVideoAsset != nil && preloadState.preloadingAudioAsset != nil), task: \(preloadState.preloadTask != nil)")
-            
-            // 1. Configure the player for speed immediately
-            player.automaticallyWaitsToMinimizeStalling = false
-
-            if let composition = preloadState.preloadingAsset as? AVMutableComposition {
-                // SCENARIO 1: Composition is ready with tracks inserted
-                print("🚀 [SUCCESS] Using fully preloaded composition for instant play")
-                
-                let item = AVPlayerItem(asset: composition)
-                item.preferredForwardBufferDuration = 1.0
-                player.replaceCurrentItem(with: item)
-                player.playImmediately(atRate: 1.0)
-                
-                startLoadingTimer()
-            } else if let videoAsset = preloadState.preloadingVideoAsset, let audioAsset = preloadState.preloadingAudioAsset {
-                // SCENARIO 2: Assets are downloading but composition not ready yet
-                // Continue the composition process that was started in preload
-                print("⏳ [CONTINUE] Composition in progress, creating player item from downloading assets...")
-                
-                Task {
-                    await createCompositionAndPlay(videoAsset: videoAsset, audioAsset: audioAsset)
-                }
-                
-                startLoadingTimer()
-            } else if let progressiveAsset = preloadState.preloadingAsset {
-                // SCENARIO 3: Progressive stream (already complete)
-                print("🚀 [SUCCESS] Using progressive stream for instant play")
-                
-                let item = AVPlayerItem(asset: progressiveAsset)
-                item.preferredForwardBufferDuration = 1.0
-                player.replaceCurrentItem(with: item)
-                player.playImmediately(atRate: 1.0)
-                
-                startLoadingTimer()
-            } else if let task = preloadState.preloadTask {
-                // SCENARIO 4: Preload task is still running (probably extracting streams)
-                // Wait for it to complete instead of starting from scratch!
-                print("⏰ [WAIT] Preload task in progress, waiting for it to complete...")
-                
-                Task {
-                    // Wait for the preload task to finish
-                    await task.value
-                    
-                    // After preload completes, check the LIVE state (not captured copies!)
-                    await MainActor.run {
-                        if let composition = preloadState.preloadingAsset as? AVMutableComposition {
-                            print("🎉 [READY] Preload completed! Using composition.")
-                            let item = AVPlayerItem(asset: composition)
-                            item.preferredForwardBufferDuration = 1.0
-                            player.replaceCurrentItem(with: item)
-                            player.playImmediately(atRate: 1.0)
-                        } else if let videoAsset = preloadState.preloadingVideoAsset, let audioAsset = preloadState.preloadingAudioAsset {
-                            print("🎉 [READY] Preload completed! Building composition from assets.")
-                            Task {
-                                await createCompositionAndPlay(videoAsset: videoAsset, audioAsset: audioAsset)
-                            }
-                        } else if let progressiveAsset = preloadState.preloadingAsset {
-                            print("🎉 [READY] Preload completed! Using progressive stream.")
-                            let item = AVPlayerItem(asset: progressiveAsset)
-                            item.preferredForwardBufferDuration = 1.0
-                            player.replaceCurrentItem(with: item)
-                            player.playImmediately(atRate: 1.0)
-                        } else {
-                            // Preload failed, fall back to fresh load
-                            print("⚠️ [FALLBACK] Preload task completed but no assets available.")
-                            loadVideo()
-                        }
-                    }
-                }
-                
-                startLoadingTimer()
-            } else {
-                // SCENARIO 5: No preload exists at all (user clicked immediately before preload started)
-                print("⚠️ [FALLBACK] No preload found, starting fresh load.")
-                
-                loadVideo()
-                startLoadingTimer()
-            }
-            
-            // Set up end-of-video detection
-            setupEndDetection()
+            appearedAt = Date()
+            session.startPlayback()
         }
         .onDisappear {
-            player.pause()
-            observerStoppedCheckTimer?.invalidate()
-            NotificationCenter.default.removeObserver(self)
+            session.stopPlayback()
         }
-        .onReceive(player.publisher(for: \.timeControlStatus)) { status in
-            if status == .playing {
-                withAnimation(.easeInOut(duration: 0.5)) {
-                    isBuffering = false
-                }
+        .task {
+            try? await Task.sleep(for: .seconds(3))
+            withAnimation { showSlowLoadingHint = true }
+        }
+        .onReceive(session.player.publisher(for: \.timeControlStatus)) { status in
+            if status == .playing, !hasStarted {
+                hasStarted = true
+                trailerLog.info("Playback started \(Date().timeIntervalSince(appearedAt), format: .fixed(precision: 2))s after Play")
             }
         }
-    }
-    
-    func startLoadingTimer() {
-        // Only show the message if it takes longer than 5 seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-            if isBuffering {
-                withAnimation {
-                    showLongLoadingMessage = true
-                }
-            }
-        }
-    }
-    
-    func createCompositionAndPlay(videoAsset: AVURLAsset, audioAsset: AVURLAsset) async {
-        do {
-            // Load tracks
-            async let vTracks = videoAsset.load(.tracks)
-            async let aTracks = audioAsset.load(.tracks)
-            
-            let composition = AVMutableComposition()
-            let compV = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
-            let compA = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
-            
-            // Wait for tracks to be ready
-            if let vTrack = try await vTracks.first, let aTrack = try await aTracks.first {
-                // Load both time ranges to compare
-                let vTrackTimeRange = try await vTrack.load(.timeRange)
-                let aTrackTimeRange = try await aTrack.load(.timeRange)
-                
-                let vDuration = CMTimeGetSeconds(vTrackTimeRange.duration)
-                let aDuration = CMTimeGetSeconds(aTrackTimeRange.duration)
-                
-                print("📊 [PLAYER] Video track: \(vDuration)s, Audio track: \(aDuration)s")
-                
-                // YouTube bug: Streams report double the actual duration
-                let safeDuration = min(vDuration, aDuration) / 2.0
-                
-                print("✅ [PLAYER] Using half duration (\(safeDuration)s) to avoid YouTube duplicate bug")
-                
-                let timeRange = CMTimeRange(start: .zero, duration: CMTime(seconds: safeDuration, preferredTimescale: 600))
-                
-                try compV?.insertTimeRange(timeRange, of: vTrack, at: .zero)
-                try compA?.insertTimeRange(timeRange, of: aTrack, at: .zero)
-                
-                print("✅ [PLAYER] Composition tracks inserted with duration: \(safeDuration)s")
-                
-                let playerItem = AVPlayerItem(asset: composition)
-                playerItem.preferredForwardBufferDuration = 1.0
-                
-                await MainActor.run {
-                    player.replaceCurrentItem(with: playerItem)
-                    player.playImmediately(atRate: 1.0)
-                }
-            }
-        } catch {
-            print("⚠️ [PLAYER] Failed to create composition: \(error)")
-            // Fall back to loading fresh
-            await MainActor.run {
-                loadVideo()
-            }
-        }
-    }
-    
-    func loadVideo() {
-        guard let url = URL(string: videoURL) else { dismiss(); return }
-        
-        Task {
-            do {
-                // Try remote first, fallback to local if insufficient streams
-                var youtube = YouTube(url: url, methods: [.remote])
-                var streams = try await youtube.streams
-                
-                if streams.count < 10 {
-                    print("⚠️ [PLAYER] Only \(streams.count) streams found remotely, retrying with local extraction...")
-                    do {
-                        youtube = YouTube(url: url, methods: [.local])
-                        streams = try await youtube.streams
-                        print("✅ [PLAYER] Local extraction succeeded with \(streams.count) streams")
-                    } catch {
-                        print("❌ [PLAYER] Local extraction also failed: \(error)")
-                        // Continue with whatever streams we have
-                    }
-                }
-                
-                // 1. Get best separate streams for highest quality
-                let bestVideo = streams.filter { stream in
-                    let codecString = stream.videoCodec.map { "\($0)".lowercased() } ?? ""
-                    return stream.audioCodec == nil && codecString.contains("avc1")
-                }.highestResolutionStream()
-                
-                let bestAudio = streams.filter {
-                    $0.videoCodec == nil && $0.audioCodec != nil
-                }.highestResolutionStream()
-
-                guard let vURL = bestVideo?.url, let aURL = bestAudio?.url else {
-                    // Fallback to best progressive if separate streams unavailable
-                    if let fallback = streams.filter({ $0.isProgressive }).highestResolutionStream() {
-                        print("📹 [PLAYER] Using progressive fallback")
-                        setupPlayer(with: AVPlayerItem(url: fallback.url))
-                    }
-                    return
-                }
-
-                // 2. PARALLEL TRACK LOADING: Load tracks without blocking
-                let videoAsset = AVURLAsset(url: vURL, options: [
-                    AVURLAssetPreferPreciseDurationAndTimingKey: false
-                ])
-                let audioAsset = AVURLAsset(url: aURL, options: [
-                    AVURLAssetPreferPreciseDurationAndTimingKey: false
-                ])
-                
-                // Start loading tracks
-                async let vTracks = videoAsset.load(.tracks)
-                async let aTracks = audioAsset.load(.tracks)
-                
-                let composition = AVMutableComposition()
-                guard let compV = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid),
-                      let compA = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) else {
-                    print("❌ [PLAYER] Failed to create composition tracks")
-                    return
-                }
-                
-                // Wait for parallel loads to finish
-                if let vTrack = try await vTracks.first, let aTrack = try await aTracks.first {
-                    // Load both time ranges to compare
-                    let vTrackTimeRange = try await vTrack.load(.timeRange)
-                    let aTrackTimeRange = try await aTrack.load(.timeRange)
-                    
-                    let vDuration = CMTimeGetSeconds(vTrackTimeRange.duration)
-                    let aDuration = CMTimeGetSeconds(aTrackTimeRange.duration)
-                    
-                    print("📊 [PLAYER] Fresh load - Video track: \(vDuration)s, Audio track: \(aDuration)s")
-                    
-                    // YouTube bug: Streams report double the actual duration
-                    let safeDuration = min(vDuration, aDuration) / 2.0
-                    
-                    print("✅ [PLAYER] Using half duration (\(safeDuration)s) to avoid YouTube duplicate bug")
-                    
-                    let timeRange = CMTimeRange(start: .zero, duration: CMTime(seconds: safeDuration, preferredTimescale: 600))
-                    
-                    try compV.insertTimeRange(timeRange, of: vTrack, at: .zero)
-                    try compA.insertTimeRange(timeRange, of: aTrack, at: .zero)
-                    
-                    print("✅ [PLAYER] Fresh composition created with duration: \(safeDuration)s")
-                    
-                    let playerItem = AVPlayerItem(asset: composition)
-                    
-                    // 3. SPEED TRICK: Don't wait for the whole file to buffer
-                    playerItem.preferredForwardBufferDuration = 1.0
-                    setupPlayer(with: playerItem)
-                }
-                
-            } catch {
-                print("Trailer Error: \(error)")
-                await MainActor.run { dismiss() }
-            }
-        }
-    }
-
-    private func setupPlayer(with item: AVPlayerItem) {
-        DispatchQueue.main.async {
-            let newPlayer = AVPlayer(playerItem: item)
-            
-            // CRITICAL: Tell the player NOT to wait for a large buffer
-            newPlayer.automaticallyWaitsToMinimizeStalling = false
-            
-            self.player = newPlayer
-            
-            // This command is more aggressive than .play()
-            self.player.playImmediately(atRate: 1.0)
-        }
-    }
-    
-    private func setupEndDetection() {
-        // Primary: Traditional notification (works reliably now that duration is correct)
-        NotificationCenter.default.addObserver(
-            forName: .AVPlayerItemDidPlayToEndTime,
-            object: nil,
-            queue: .main
-        ) { [self] _ in
-            guard !hasReachedEnd else { return }
-            hasReachedEnd = true
-            print("🏁 [END] Video ended via notification")
+        .onChange(of: session.finishedCount) {
             dismiss()
         }
-        
-        // Fallback: Polling to catch edge cases
-        observerStoppedCheckTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [self] _ in
-            guard !hasReachedEnd, let currentItem = player.currentItem else { return }
-            
-            let currentTime = currentItem.currentTime().seconds
-            let duration = currentItem.duration.seconds
-            
-            guard duration.isFinite, duration > 0 else { return }
-            
-            // Simple end detection
-            if currentTime >= duration - 0.5 {
-                hasReachedEnd = true
-                print("🏁 [END] Video ended via polling")
-                dismiss()
+    }
+
+    private func failureView(_ message: String) -> some View {
+        VStack(spacing: 40) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 80))
+                .foregroundStyle(.yellow)
+            VStack(spacing: 12) {
+                Text("Trailer Unavailable")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                Text(message)
+                    .font(.body)
+                    .foregroundStyle(.white.opacity(0.8))
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 900)
+            }
+            HStack(spacing: 30) {
+                Button("Try Again") {
+                    session.retry()
+                    session.startPlayback()
+                }
+                if let url = URL(string: session.link) {
+                    Button("Open in YouTube") {
+                        UIApplication.shared.open(url)
+                    }
+                }
+                Button("Close") {
+                    dismiss()
+                }
             }
         }
     }
