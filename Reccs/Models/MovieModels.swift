@@ -116,6 +116,8 @@ extension MovieEntry {
         else if url.contains("fandango") { return "Fandango" }
         else if url.contains("vudu") { return "Vudu" }
         else if url.contains("roku") { return "Roku" }
+        else if url.contains("pluto") { return "Pluto TV" }
+        else if url.contains("paramount") { return "Paramount+" }
         
         return "Movie"
     }
@@ -147,6 +149,8 @@ extension MovieEntry {
         if url.contains("hoopla") { return (Color(hex: "51ABE4"), .white) }
         if url.contains("vimeo") { return (Color(hex: "62AFD7"), .white) }
         if url.contains("fawesome") { return (Color(hex: "EA3323"), .white) }
+        if url.contains("pluto") { return (.black, .yellow) }
+        if url.contains("paramount") { return (Color(hex: "2962F6"), .white) }
         
         return (Color.black.opacity(0.8), .white)
     }
