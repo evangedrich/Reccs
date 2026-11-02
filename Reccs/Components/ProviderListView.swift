@@ -9,9 +9,7 @@ import SwiftUI
 
 struct ProviderListView: View {
     let movie: MovieEntry
-    @Binding var isPresented: Bool
-    @Binding var showInstallAlert: Bool
-    @Binding var failedServiceName: String
+    let onSelect: (String) -> Void
     
     var body: some View {
         VStack(spacing: 40) {
@@ -26,15 +24,7 @@ struct ProviderListView: View {
                         let brandColors = movie.getServiceColors(for: urlString)
                         
                         Button(action: {
-                            if let url = movie.getWatchURL(for: urlString) {
-                                UIApplication.shared.open(url, options: [:]) { success in
-                                    if !success {
-                                        self.failedServiceName = serviceName
-                                        self.isPresented = false
-                                        self.showInstallAlert = true
-                                    }
-                                }
-                            }
+                            onSelect(urlString)
                         }) {
                             HStack(spacing: 20) {
                                 Text(serviceName)

@@ -12,7 +12,6 @@ struct MovieShelfView: View {
     let filteredMovies: [MovieEntry]
     @Environment(MovieStore.self) private var store
     @FocusState private var focusedID: String?
-    @State private var scrollID: String?
     
     var body: some View {
         VStack(alignment: .leading) {
@@ -20,39 +19,39 @@ struct MovieShelfView: View {
                 .font(.title3)
                 .fontWeight(.bold)
                 .padding(.leading, 80)
-            ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: 50) {
-                    if store.isLoading && filteredMovies.isEmpty {
-                        // Show loading skeletons
-                        ForEach(0..<5, id: \.self) { index in
-                            MovieCardSkeleton()
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    LazyHStack(spacing: 50) {
+                        if store.isLoading && filteredMovies.isEmpty {
+                            // Show loading skeletons
+                            ForEach(0..<5, id: \.self) { index in
+                                MovieCardSkeleton()
+                            }
+                        } else {
+                            // Show actual movies
+                            ForEach(filteredMovies) { movie in
+                                MovieCard(movie: movie)
+                                    .id(movie.id)
+                                    .focused($focusedID, equals: movie.id)
+                                    .accessibilityIdentifier("shelf-card-\(movie.id)")
+                            }
                         }
-                    } else {
-                        // Show actual movies
-                        ForEach(filteredMovies) { movie in
-                            MovieCard(movie: movie)
-                                .id(movie.id)
-                                .focused($focusedID, equals: movie.id)
-                        }
+                        Spacer()
+                            .frame(width: 1500)
                     }
-                    Spacer()
-                        .frame(width: 1500)
+                    .scrollTargetLayout()
                 }
-                .scrollTargetLayout()
-            }
-            .scrollPosition(id: $scrollID, anchor: .leading)
-            .scrollTargetBehavior(.viewAligned)
-            .contentMargins(.horizontal, 80, for: .scrollContent)
-            .onChange(of: focusedID) { _, newValue in
-                withAnimation(.spring(response: 0.25, dampingFraction: 0.9)) {
-                    scrollID = newValue
+                .scrollTargetBehavior(.viewAligned)
+                .contentMargins(.horizontal, 80, for: .scrollContent)
+                .onChange(of: focusedID) { _, newValue in
+                    guard let newValue else { return }
+                    withAnimation(.spring(response: 0.25, dampingFraction: 0.9)) {
+                        proxy.scrollTo(newValue, anchor: .leading)
+                    }
                 }
+                .scrollClipDisabled()
+                .padding(.vertical, 10)
             }
-            .scrollClipDisabled()
-            .padding(.vertical, 10)
-        }
-        .onAppear {
-            scrollID = filteredMovies.first?.id
         }
     }
 }

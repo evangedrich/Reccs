@@ -21,6 +21,8 @@ struct MovieEntry: Identifiable, @unchecked Sendable, Hashable {
     let trailer: String
     let color: String
     let location: MovieLocation
+    /// Optional search titles keyed by service name, for when a service's title can't be found automatically.
+    var searchTitles: [String: String]? = nil
 }
 
 // Separate nonisolated conformance to Codable
@@ -57,43 +59,6 @@ extension Color {
 }
 
 extension MovieEntry {
-    func getWatchURL(for webURL: String) -> URL? {
-        let finalURLString = webURL
-        if webURL.contains("amazon.com") || webURL.contains("primevideo.com") {
-            if let id = webURL.components(separatedBy: "/detail/").last?.components(separatedBy: "/").first {
-                return URL(string: "aiv://aiv/play?asin=\(id)")
-            }
-        } else if webURL.contains("youtu.be") || webURL.contains("youtube.com") {
-            let id = webURL.contains("youtu.be/") ?
-                webURL.components(separatedBy: "youtu.be/").last?.components(separatedBy: "?").first :
-                URLComponents(string: webURL)?.queryItems?.first(where: { $0.name == "v" })?.value
-            if let id = id { return URL(string: "youtube://watch/\(id)") }
-        } else if webURL.contains("max.com") {
-            let id = webURL.components(separatedBy: "/").last?.components(separatedBy: "?").first
-            if let id = id { return URL(string: "https://play.max.com/movie/\(id)") }
-        } else if webURL.contains("hulu.com") {
-            let id = webURL.components(separatedBy: "/").last?.components(separatedBy: "?").first
-            if let id = id { return URL(string: "hulu://movie/\(id)") }
-        } else if webURL.contains("vimeo.com") {
-            let id = webURL.components(separatedBy: "/").last?.components(separatedBy: "?").first
-            if let id = id { return URL(string: "vimeo://://app.vimeo.com/\(id)") }
-        } else if webURL.contains("klassiki") {
-            let id = webURL.components(separatedBy: "/").last?.components(separatedBy: "?").first
-            if let id = id { return URL(string: "ott.klassiki1://\(id)") }
-        } else if webURL.contains("kanopy.com") {
-            let id = webURL.components(separatedBy: "/").last?.components(separatedBy: "?").first
-            if let id = id { return URL(string: "https://www.kanopy.com/product/justwatch-\(id)") }
-        }
-        return URL(string: finalURLString)
-    }
-
-    var watchURL: URL? {
-        guard let first = watch.first else { return nil }
-        return getWatchURL(for: first)
-    }
-}
-
-extension MovieEntry {
     // Returns the brand name based on the URL string
     func getServiceName(for urlString: String) -> String {
         let url = urlString.lowercased()
@@ -104,7 +69,7 @@ extension MovieEntry {
         else if url.contains("amazon") || url.contains("primevideo") { return "Prime" }
         else if url.contains("youtu") { return "YouTube" }
         else if url.contains("klassiki") { return "Klassiki" }
-        else if url.contains("max.com") || url.contains("hbomax") { return "Max" }
+        else if url.contains("max.com") || url.contains("hbomax") { return "HBO Max" }
         else if url.contains("tubitv") { return "Tubi" }
         else if url.contains("vimeo") { return "Vimeo" }
         else if url.contains("archive.org") { return "Internet Archive" }
@@ -116,6 +81,8 @@ extension MovieEntry {
         else if url.contains("fandango") { return "Fandango" }
         else if url.contains("vudu") { return "Vudu" }
         else if url.contains("roku") { return "Roku" }
+        else if url.contains("pluto") { return "Pluto TV" }
+        else if url.contains("paramount") { return "Paramount+" }
         
         return "Movie"
     }
@@ -147,6 +114,8 @@ extension MovieEntry {
         if url.contains("hoopla") { return (Color(hex: "51ABE4"), .white) }
         if url.contains("vimeo") { return (Color(hex: "62AFD7"), .white) }
         if url.contains("fawesome") { return (Color(hex: "EA3323"), .white) }
+        if url.contains("pluto") { return (.black, .yellow) }
+        if url.contains("paramount") { return (Color(hex: "2962F6"), .white) }
         
         return (Color.black.opacity(0.8), .white)
     }
@@ -156,5 +125,42 @@ extension MovieEntry {
     var regionLabel: String {
         let code = String(id.prefix(4)).uppercased()
         return SubregionNames[code] ?? ""
+    }
+}
+
+extension MovieEntry {
+    /// Sort key for region pages: CFF, then GFF, then CSF, and in ID order within each type.
+    /// IDs are the four-letter region, the three-letter type, then an optional number.
+    var regionPageOrder: String {
+        let type = id.dropFirst(4).prefix(3)
+        let rank = ["CFF", "GFF", "CSF"].firstIndex(of: String(type)) ?? 3
+        return "\(rank)\(id)"
+    }
+}
+
+/// Shuffles the home page rows into a new order each day, the same order all day.
+nonisolated enum DailyShuffle {
+    static var todaySeed: UInt64 {
+        let date = Calendar.current.dateComponents([.year, .month, .day], from: .now)
+        return UInt64(date.year ?? 0) * 10_000 + UInt64(date.month ?? 0) * 100 + UInt64(date.day ?? 0)
+    }
+
+    static func order(_ movies: [MovieEntry], seed: UInt64) -> [MovieEntry] {
+        // Sorted first so the result doesn't depend on the order the database returned them in.
+        var generator = SplitMix64(state: seed)
+        return movies.sorted { $0.id < $1.id }.shuffled(using: &generator)
+    }
+
+    /// A repeatable generator; Swift's own is deliberately different on every run.
+    private struct SplitMix64: RandomNumberGenerator {
+        var state: UInt64
+
+        mutating func next() -> UInt64 {
+            state &+= 0x9E37_79B9_7F4A_7C15
+            var z = state
+            z = (z ^ (z >> 30)) &* 0xBF58_476D_1CE4_E5B9
+            z = (z ^ (z >> 27)) &* 0x94D0_49BB_1331_11EB
+            return z ^ (z >> 31)
+        }
     }
 }

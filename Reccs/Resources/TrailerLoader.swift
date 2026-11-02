@@ -113,11 +113,15 @@ nonisolated enum TrailerSource {
         return Date(timeIntervalSince1970: earliest).addingTimeInterval(-10 * 60)
     }
 
-    /// The best audio-only stream: AAC first (universally supported), then highest bitrate.
+    /// The best audio-only stream: the video's original language first (YouTube also serves dubbed and
+    /// auto-dubbed tracks on some videos), then AAC (universally supported), then highest bitrate.
     static func bestAudio(in streams: [YouTubeKit.Stream]) -> YouTubeKit.Stream? {
         streams
             .filter { $0.includesAudioTrack && !$0.includesVideoTrack }
-            .max { ($0.audioCodec == .mp4a ? 1 : 0, $0.bitrate ?? 0) < ($1.audioCodec == .mp4a ? 1 : 0, $1.bitrate ?? 0) }
+            .max { a, b in
+                (a.audioTrackKind.rank, a.audioCodec == .mp4a ? 1 : 0, a.bitrate ?? 0)
+                    < (b.audioTrackKind.rank, b.audioCodec == .mp4a ? 1 : 0, b.bitrate ?? 0)
+            }
     }
 
     /// Every combination this device can decode, best first: highest resolution, then the
@@ -230,27 +234,15 @@ final class TrailerLoader {
 
     // MARK: - Resolution
 
-    /// Extracts with YouTubeKit's remote service, falling back to on-device extraction, and prefers an
-    /// adaptive HLS stream built from the result, then fixed-quality compositions.
+    /// Extracts on-device first (it returns only the original-language audio), falling back to YouTubeKit's
+    /// remote service, and prefers an adaptive HLS stream built from the result, then fixed-quality compositions.
     private func resolve(_ reference: TrailerReference) async throws -> TrailerMedia {
         let started = Date()
         var lastError: Error = TrailerError.noPlayableStreams
 
-        for (name, method) in [("remote", YouTube.ExtractionMethod.remote), ("local", .local)] {
-            let streams: [YouTubeKit.Stream]
-            do {
-                streams = try await withTimeout(extractionTimeout) {
-                    try await YouTube(videoID: reference.videoID, methods: [method]).streams
-                }
-            } catch {
-                trailerLog.error("\(name, privacy: .public) extraction failed for \(reference.videoID, privacy: .public): \(error.localizedDescription, privacy: .public)")
-                lastError = error
-                continue
-            }
-
+        func build(from streams: [YouTubeKit.Stream], via name: String) async -> TrailerMedia? {
             let sources = TrailerSource.ranked(from: streams)
-            trailerLog.info("\(name, privacy: .public) extraction: \(streams.count) streams, best \(sources.first?.resolution ?? 0)p, \(Date().timeIntervalSince(started), format: .fixed(precision: 1))s")
-            guard !sources.isEmpty else { continue }
+            guard !sources.isEmpty else { return nil }
 
             do {
                 let adaptive = try await withTimeout(hlsTimeout) {
@@ -287,6 +279,41 @@ final class TrailerLoader {
                     lastError = error
                 }
             }
+            return nil
+        }
+
+        let methods: [(String, YouTube.ExtractionMethod)] = [("local", .local), ("remote", .remote)]
+        // Streams whose only audio is a dub, kept as a last resort in case no method finds the original.
+        var dubbedOnly: (name: String, streams: [YouTubeKit.Stream])?
+
+        for (index, (name, method)) in methods.enumerated() {
+            let streams: [YouTubeKit.Stream]
+            do {
+                streams = try await withTimeout(extractionTimeout) {
+                    try await YouTube(videoID: reference.videoID, methods: [method]).streams
+                }
+            } catch {
+                trailerLog.error("\(name, privacy: .public) extraction failed for \(reference.videoID, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                lastError = error
+                continue
+            }
+
+            let audio = TrailerSource.bestAudio(in: streams)
+            trailerLog.info("\(name, privacy: .public) extraction: \(streams.count) streams, audio \(audio?.audioTrackKind.description ?? "none", privacy: .public), \(Date().timeIntervalSince(started), format: .fixed(precision: 1))s")
+
+            if audio?.audioTrackKind == .dubbed, index < methods.count - 1 {
+                // Remote extraction sometimes returns only an auto-dubbed track; look for the original elsewhere.
+                if dubbedOnly == nil { dubbedOnly = (name, streams) }
+                continue
+            }
+            if let media = await build(from: streams, via: name) {
+                return media
+            }
+        }
+
+        if let dubbedOnly, let media = await build(from: dubbedOnly.streams, via: dubbedOnly.name) {
+            trailerLog.info("Only dubbed audio was available for \(reference.videoID, privacy: .public)")
+            return media
         }
         throw lastError
     }
@@ -436,6 +463,42 @@ nonisolated func withTimeout<T: Sendable>(
         defer { group.cancelAll() }
         guard let result = try await group.next() else { throw TrailerError.timedOut }
         return result
+    }
+}
+
+/// Which audio track a stream carries, from the `acont` field YouTube puts in the URL's `xtags`
+/// (e.g. `acont=original:lang=fr-FR` or `acont=dubbed-auto:lang=en-US`).
+nonisolated enum AudioTrackKind: Equatable {
+    /// The video's own audio.
+    case original
+    /// No track information: the video has a single audio track, which is the original.
+    case unlabeled
+    /// A dub, auto-dub, audio description or other alternate track.
+    case dubbed
+
+    var rank: Int {
+        switch self {
+        case .original: 2
+        case .unlabeled: 1
+        case .dubbed: 0
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .original: "original"
+        case .unlabeled: "single track"
+        case .dubbed: "dubbed only"
+        }
+    }
+}
+
+extension YouTubeKit.Stream {
+    nonisolated var audioTrackKind: AudioTrackKind {
+        guard let tags = url.queryValue("xtags") else { return .unlabeled }
+        let fields = tags.split(separator: ":").map { $0.split(separator: "=", maxSplits: 1) }
+        guard let content = fields.first(where: { $0.first == "acont" })?.last else { return .unlabeled }
+        return content == "original" ? .original : .dubbed
     }
 }
 

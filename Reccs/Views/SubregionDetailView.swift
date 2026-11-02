@@ -44,7 +44,7 @@ struct SubregionDetailView: View {
                     VStack {
                         Spacer(minLength: 0)
                         MovieStackView(
-                            movies: store.films.filter { $0.id.hasPrefix(id) },
+                            movies: store.films.filter { $0.id.hasPrefix(id) }.sorted { $0.regionPageOrder < $1.regionPageOrder },
                             columns: 2,
                             focusedElement: $focusedElement
                         )
