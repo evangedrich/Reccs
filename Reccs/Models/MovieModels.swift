@@ -21,6 +21,8 @@ struct MovieEntry: Identifiable, @unchecked Sendable, Hashable {
     let trailer: String
     let color: String
     let location: MovieLocation
+    /// Optional search titles keyed by service name, for when a service's title can't be found automatically.
+    var searchTitles: [String: String]? = nil
 }
 
 // Separate nonisolated conformance to Codable
@@ -57,43 +59,6 @@ extension Color {
 }
 
 extension MovieEntry {
-    func getWatchURL(for webURL: String) -> URL? {
-        let finalURLString = webURL
-        if webURL.contains("amazon.com") || webURL.contains("primevideo.com") {
-            if let id = webURL.components(separatedBy: "/detail/").last?.components(separatedBy: "/").first {
-                return URL(string: "aiv://aiv/play?asin=\(id)")
-            }
-        } else if webURL.contains("youtu.be") || webURL.contains("youtube.com") {
-            let id = webURL.contains("youtu.be/") ?
-                webURL.components(separatedBy: "youtu.be/").last?.components(separatedBy: "?").first :
-                URLComponents(string: webURL)?.queryItems?.first(where: { $0.name == "v" })?.value
-            if let id = id { return URL(string: "youtube://watch/\(id)") }
-        } else if webURL.contains("max.com") {
-            let id = webURL.components(separatedBy: "/").last?.components(separatedBy: "?").first
-            if let id = id { return URL(string: "https://play.max.com/movie/\(id)") }
-        } else if webURL.contains("hulu.com") {
-            let id = webURL.components(separatedBy: "/").last?.components(separatedBy: "?").first
-            if let id = id { return URL(string: "hulu://movie/\(id)") }
-        } else if webURL.contains("vimeo.com") {
-            let id = webURL.components(separatedBy: "/").last?.components(separatedBy: "?").first
-            if let id = id { return URL(string: "vimeo://://app.vimeo.com/\(id)") }
-        } else if webURL.contains("klassiki") {
-            let id = webURL.components(separatedBy: "/").last?.components(separatedBy: "?").first
-            if let id = id { return URL(string: "ott.klassiki1://\(id)") }
-        } else if webURL.contains("kanopy.com") {
-            let id = webURL.components(separatedBy: "/").last?.components(separatedBy: "?").first
-            if let id = id { return URL(string: "https://www.kanopy.com/product/justwatch-\(id)") }
-        }
-        return URL(string: finalURLString)
-    }
-
-    var watchURL: URL? {
-        guard let first = watch.first else { return nil }
-        return getWatchURL(for: first)
-    }
-}
-
-extension MovieEntry {
     // Returns the brand name based on the URL string
     func getServiceName(for urlString: String) -> String {
         let url = urlString.lowercased()
@@ -104,7 +69,7 @@ extension MovieEntry {
         else if url.contains("amazon") || url.contains("primevideo") { return "Prime" }
         else if url.contains("youtu") { return "YouTube" }
         else if url.contains("klassiki") { return "Klassiki" }
-        else if url.contains("max.com") || url.contains("hbomax") { return "Max" }
+        else if url.contains("max.com") || url.contains("hbomax") { return "HBO Max" }
         else if url.contains("tubitv") { return "Tubi" }
         else if url.contains("vimeo") { return "Vimeo" }
         else if url.contains("archive.org") { return "Internet Archive" }

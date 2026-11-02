@@ -171,6 +171,7 @@ function rowToMovie(row) {
     group: group,
     info: info,
     watch: parseJson(row.watch_urls) || [],
+    searchTitles: parseJson(row.search_titles) || undefined,
     trailer: row.trailer_url || '',
     color: row.color || '#000000',
     location: location

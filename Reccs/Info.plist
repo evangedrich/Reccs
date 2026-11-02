@@ -4,20 +4,16 @@
 <dict>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
-		<string>com.kanopy.Kanopy</string>
 		<string>nflx</string>
-		<string>com.apple.TVAppStore</string>
-		<string>primevideo</string>
+		<string>aiv</string>
 		<string>youtube</string>
-		<string>hbomax</string>
+		<string>hulu</string>
 		<string>tubitv</string>
 		<string>vimeo</string>
 		<string>mubi</string>
-		<string>hulu</string>
-		<string>vhx-criterion-channel</string>
+		<string>criterion</string>
 		<string>vudu</string>
-		<string>roku</string>
-		<string>hoopla</string>
+		<string>pplus</string>
 	</array>
 </dict>
 </plist>

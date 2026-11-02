@@ -10,12 +10,11 @@ import SwiftUI
 struct MovieDetailView: View {
     let movie: MovieEntry
     @Environment(MovieStore.self) private var movieStore
-    @State private var showInstallAlert = false
     @State private var showFullInfo = false
     @State private var trailer: TrailerSession?
     @State private var presentedTrailer: TrailerSession?
     @State private var showProviderList = false
-    @State private var failedServiceName = ""
+    @State private var watchAlert: WatchAlert?
     @Namespace private var detailNamespace
     @FocusState private var focusedElement: FocusElement?
     
@@ -93,24 +92,7 @@ struct MovieDetailView: View {
                     HStack(spacing: 30) {
                         if let firstLink = movie.watch.first, !firstLink.isEmpty {
                             Button(action: {
-                                if let url = movie.watchURL {
-//                                    let activity = NSUserActivity(activityType: NSUserActivityTypeBrowsingWeb)
-//                                    activity.webpageURL = url
-//                                    activity.becomeCurrent()
-//
-//                                    UIApplication.shared.open(url, options: [:]) { success in
-//                                        if !success {
-//                                            self.failedServiceName = movie.watchServiceName
-//                                            self.showInstallAlert = true
-//                                        }
-//                                    }
-                                    UIApplication.shared.open(url, options: [:]) { success in
-                                        if !success {
-                                            self.failedServiceName = movie.watchServiceName
-                                            self.showInstallAlert = true
-                                        }
-                                    }
-                                }
+                                openWatchLink(firstLink)
                             }) {
                                 HStack(spacing: 12) {
                                     Image(systemName: "play.fill")
@@ -158,12 +140,10 @@ struct MovieDetailView: View {
                             }
                             .focused($focusedElement, equals: .more)
                             .sheet(isPresented: $showProviderList) {
-                                ProviderListView(
-                                    movie: movie,
-                                    isPresented: $showProviderList,
-                                    showInstallAlert: $showInstallAlert,
-                                    failedServiceName: $failedServiceName
-                                )
+                                ProviderListView(movie: movie) { link in
+                                    showProviderList = false
+                                    openWatchLink(link, afterDismissingSheet: true)
+                                }
                             }
                         }
                     }
@@ -207,6 +187,7 @@ struct MovieDetailView: View {
                 trailer = TrailerSession(link: movie.trailer, title: movie.title.original)
             }
             trailer?.preload()
+            await SearchTitle.prefetch(for: movie)
         }
         .onDisappear {
             // Presenting the trailer (or another cover) also hides this page; only release it when actually leaving.
@@ -218,18 +199,20 @@ struct MovieDetailView: View {
             TrailerPlayerView(session: session)
         }
         .alert(
-            ["Kanopy","Klassiki","Mubi","Hoopla","Fawesome","Criterion"].contains(failedServiceName)
-            ? "Cannot connect to \(failedServiceName)"
-            : "\(failedServiceName) Not Installed",
-            isPresented: $showInstallAlert
-        ) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text(
-                ["Kanopy","Klassiki","Mubi","Hoopla","Fawesome","Criterion"].contains(failedServiceName)
-                ? "Please install the \(failedServiceName) app, or if already installed, go to the app directly and search for this title."
-                : "Please install the \(failedServiceName) app from the App Store to watch this film\(movie.watch.count>1 ? " or check other providers":"")."
-            )
+            watchAlert?.title ?? "",
+            isPresented: Binding(get: { watchAlert != nil }, set: { if !$0 { watchAlert = nil } }),
+            presenting: watchAlert
+        ) { alert in
+            if let action = alert.action {
+                Button(action.label) {
+                    Task { watchAlert = await WatchLinkOpener.perform(alert) }
+                }
+                Button("Cancel", role: .cancel) { }
+            } else {
+                Button("OK", role: .cancel) { }
+            }
+        } message: { alert in
+            Text(alert.message)
         }
         .onAppear {
             if let firstLink = movie.watch.first, !firstLink.isEmpty {
@@ -240,6 +223,16 @@ struct MovieDetailView: View {
         }
         .toolbar(.hidden, for: .tabBar)
         .ignoresSafeArea(.container, edges: .top)
+    }
+
+    private func openWatchLink(_ link: String, afterDismissingSheet: Bool = false) {
+        Task {
+            if afterDismissingSheet {
+                // An alert can't appear until the sheet has finished closing.
+                try? await Task.sleep(for: .milliseconds(500))
+            }
+            watchAlert = await WatchLinkOpener.open(link, for: movie)
+        }
     }
 }
 
