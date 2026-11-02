@@ -20,6 +20,7 @@ struct MovieStackView: View {
                         MovieCard(movie: movies[index])
                             .scaleEffect(1.0)
                             .focused(focusedElement, equals: movies[index].id)
+                            .accessibilityIdentifier("region-card-\(movies[index].id)")
                     }
                 }
             }

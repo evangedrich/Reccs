@@ -128,6 +128,16 @@ extension MovieEntry {
     }
 }
 
+extension MovieEntry {
+    /// Sort key for region pages: CFF, then GFF, then CSF, and in ID order within each type.
+    /// IDs are the four-letter region, the three-letter type, then an optional number.
+    var regionPageOrder: String {
+        let type = id.dropFirst(4).prefix(3)
+        let rank = ["CFF", "GFF", "CSF"].firstIndex(of: String(type)) ?? 3
+        return "\(rank)\(id)"
+    }
+}
+
 /// Shuffles the home page rows into a new order each day, the same order all day.
 nonisolated enum DailyShuffle {
     static var todaySeed: UInt64 {
