@@ -127,3 +127,30 @@ extension MovieEntry {
         return SubregionNames[code] ?? ""
     }
 }
+
+/// Shuffles the home page rows into a new order each day, the same order all day.
+nonisolated enum DailyShuffle {
+    static var todaySeed: UInt64 {
+        let date = Calendar.current.dateComponents([.year, .month, .day], from: .now)
+        return UInt64(date.year ?? 0) * 10_000 + UInt64(date.month ?? 0) * 100 + UInt64(date.day ?? 0)
+    }
+
+    static func order(_ movies: [MovieEntry], seed: UInt64) -> [MovieEntry] {
+        // Sorted first so the result doesn't depend on the order the database returned them in.
+        var generator = SplitMix64(state: seed)
+        return movies.sorted { $0.id < $1.id }.shuffled(using: &generator)
+    }
+
+    /// A repeatable generator; Swift's own is deliberately different on every run.
+    private struct SplitMix64: RandomNumberGenerator {
+        var state: UInt64
+
+        mutating func next() -> UInt64 {
+            state &+= 0x9E37_79B9_7F4A_7C15
+            var z = state
+            z = (z ^ (z >> 30)) &* 0xBF58_476D_1CE4_E5B9
+            z = (z ^ (z >> 27)) &* 0x94D0_49BB_1331_11EB
+            return z ^ (z >> 31)
+        }
+    }
+}
